@@ -1,4 +1,5 @@
 package com.pulsarntk.winhelper;
+
 import java.util.Map.Entry;
 
 import lc.kra.system.keyboard.GlobalKeyboardHook;
@@ -9,6 +10,6 @@ import com.pulsarntk.winhelper.virtualdesktopaccessor.VirtualDesktopAccessor;
 public class App {
 
 	public static void main(String[] args) {
-		System.out.println(Integer.toString(new VirtualDesktopAccessor().GetDesktopCount()));
+		System.out.println(Integer.toString(VirtualDesktopAccessor.INSTANCE.GetDesktopCount()));
 	}
 }
