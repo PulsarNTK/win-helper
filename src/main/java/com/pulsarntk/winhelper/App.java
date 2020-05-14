@@ -1,15 +1,19 @@
 package com.pulsarntk.winhelper;
 
-import java.util.Map.Entry;
-
-import lc.kra.system.keyboard.GlobalKeyboardHook;
-import lc.kra.system.keyboard.event.GlobalKeyAdapter;
-import lc.kra.system.keyboard.event.GlobalKeyEvent;
-import com.pulsarntk.winhelper.virtualdesktopaccessor.VirtualDesktopAccessor;
+import java.rmi.UnexpectedException;
+import com.sun.jna.platform.win32.WinUser.MSG;
+import com.pulsarntk.winhelper.hotkey.RegisterHotkey;
+import com.pulsarntk.winhelper.hotkey.VKMap;
+import com.pulsarntk.winhelper.plugins.TaskbarWhell;
 
 public class App {
 
-	public static void main(String[] args) {
-		System.out.println(Integer.toString(VirtualDesktopAccessor.INSTANCE.GetDesktopCount()));
+	public static void main(String[] args) throws UnexpectedException, InterruptedException {
+		new TaskbarWhell().install();
+
+	}
+
+	public static int lParamToVK(int lParam) {
+		return lParam >> 16;
 	}
 }

@@ -1,4 +1,4 @@
-package com.pulsarntk.winhelper.virtualdesktopaccessor;
+package com.pulsarntk.winhelper.lib;
 
 import com.sun.jna.Library;
 import com.sun.jna.Native;
@@ -8,6 +8,8 @@ import com.sun.jna.platform.win32.WinDef.BOOL;
 public interface VirtualDesktopAccessor extends Library {
     VirtualDesktopAccessor INSTANCE = (VirtualDesktopAccessor) Native.load("lib/VirtualDesktopAccessor.dll",
             VirtualDesktopAccessor.class);
+
+    int GetCurrentDesktopNumber();
 
     int GetDesktopCount();
 
@@ -58,7 +60,7 @@ public interface VirtualDesktopAccessor extends Library {
     void RestartVirtualDesktopAccessor();
 
     /**
-     * // Is the window shown in Alt+Tab list?
+     * Is the window shown in Alt+Tab list?
      */
     int ViewIsShownInSwitchers(HWND hwnd);
 
