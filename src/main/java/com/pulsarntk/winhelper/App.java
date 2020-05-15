@@ -1,19 +1,26 @@
 package com.pulsarntk.winhelper;
 
 import java.rmi.UnexpectedException;
-import com.sun.jna.platform.win32.WinUser.MSG;
-import com.pulsarntk.winhelper.hotkey.RegisterHotkey;
-import com.pulsarntk.winhelper.hotkey.VKMap;
-import com.pulsarntk.winhelper.plugins.TaskbarWhell;
+import java.util.ArrayList;
+import java.util.List;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+import com.pulsarntk.winhelper.itf.Feature;
+import com.pulsarntk.winhelper.feature.*;
+import com.pulsarntk.winhelper.settings.Settings;
+import com.formdev.flatlaf.FlatDarkLaf;
 
 public class App {
+	public static ArrayList<Feature> features = new ArrayList<Feature>();
 
 	public static void main(String[] args) throws UnexpectedException, InterruptedException {
-		new TaskbarWhell().install();
-
+		FlatDarkLaf.install();
+		addFeature(new TaskbarWheel());
+		addFeature(new TaskbarWheel());
+		Settings settings = new Settings(features);
 	}
 
-	public static int lParamToVK(int lParam) {
-		return lParam >> 16;
+	public static void addFeature(Feature feature) {
+		features.add(feature);
 	}
 }

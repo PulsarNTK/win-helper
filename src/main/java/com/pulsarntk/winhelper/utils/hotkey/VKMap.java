@@ -1,4 +1,4 @@
-package com.pulsarntk.winhelper.hotkey;
+package com.pulsarntk.winhelper.utils.hotkey;
 
 public interface VKMap {
     public final int VK_ABNT_C1 /*               */ = 0xC1; // Abnt C1

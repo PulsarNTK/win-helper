@@ -1,4 +1,4 @@
-package com.pulsarntk.winhelper.hotkey;
+package com.pulsarntk.winhelper.utils.hotkey;
 
 import com.sun.jna.platform.win32.User32;
 import java.rmi.UnexpectedException;
