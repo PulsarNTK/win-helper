@@ -1,4 +1,4 @@
-package com.pulsarntk.winhelper.feature;
+package com.pulsarntk.winhelper.feature.taskbarscroll;
 
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
@@ -11,15 +11,14 @@ import lc.kra.system.mouse.GlobalMouseHook;
 import lc.kra.system.mouse.event.GlobalMouseAdapter;
 import lc.kra.system.mouse.event.GlobalMouseEvent;
 
-public class TaskbarWheel implements Feature {
+public class TaskbarScroll implements Feature {
     GlobalMouseHook mouseHook = new GlobalMouseHook();
     String NAME = "Taskbar Wheel";
     String DESCRIPTION = "Change Virtual Desktop using the mouse wheel and move the pointer over the Taskbar.";
     String TASKBAR_CLASS = "Shell_TrayWnd";
-    TaskbarWheel.Settings settings = new TaskbarWheel.Settings();
+    TaskbarScroll.Settings settings = new TaskbarScroll.Settings();
 
-    public TaskbarWheel() {
-        installSettings();
+    public TaskbarScroll() {
         mouseHook.addMouseListener(new GlobalMouseAdapter() {
             @Override
             public void mouseWheel(GlobalMouseEvent event) {
@@ -40,14 +39,9 @@ public class TaskbarWheel implements Feature {
 
 
 
-    public void installSettings() {
-        JLabel header = new JLabel("Taskbar Wheel");
-    }
-
-
     private class Settings extends JPanel {
         Settings() {
-            add(new JCheckBox("Enabled"));
+            JLabel header = new JLabel("Taskbar Wheel");
         }
     }
 

@@ -1,12 +1,10 @@
 package com.pulsarntk.winhelper.settings;
 
 import java.awt.*;
-import java.awt.event.*;
 import java.util.ArrayList;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.swing.event.MouseInputListener;
 import com.pulsarntk.winhelper.itf.Feature;
 
 public class Settings extends JFrame {
@@ -21,7 +19,7 @@ public class Settings extends JFrame {
         }
         pack();
         setResizable(false);
-        setVisible(true);
+        // setVisible(true);
     }
 
     private void x(Feature feature) {

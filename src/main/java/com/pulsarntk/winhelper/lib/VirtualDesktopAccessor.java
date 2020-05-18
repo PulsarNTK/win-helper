@@ -4,10 +4,12 @@ import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.platform.win32.WinDef.*;
 import com.sun.jna.platform.win32.WinDef.BOOL;
+import com.sun.jna.platform.win32.Kernel32;
+import com.sun.jna.platform.win32.User32;
+import com.sun.jna.platform.win32.WinUser.MSG;
 
 public interface VirtualDesktopAccessor extends Library {
-    VirtualDesktopAccessor INSTANCE = (VirtualDesktopAccessor) Native.load("lib/VirtualDesktopAccessor.dll",
-            VirtualDesktopAccessor.class);
+    VirtualDesktopAccessor INSTANCE = (VirtualDesktopAccessor) Native.load("lib/VirtualDesktopAccessor.dll", VirtualDesktopAccessor.class);
 
     int GetCurrentDesktopNumber();
 
@@ -15,15 +17,17 @@ public interface VirtualDesktopAccessor extends Library {
 
     int GetWindowDesktopNumber(HWND window);
 
+    int GetWindowDesktopNumber(int window);
+
     int IsWindowOnCurrentVirtualDesktop(HWND window);
 
     BOOL MoveWindowToDesktopNumber(HWND window, int number);
 
     void GoToDesktopNumber(int number);
 
-    void RegisterPostMessageHook(HWND listener, int messageOffset);
+    void RegisterPostMessageHook(int listener, int messageOffset);
 
-    void UnregisterPostMessageHook(HWND hwnd);
+    void UnregisterPostMessageHook(int hwnd);
 
     /**
      * @return 1 if pinned, 0 if not pinned, -1 if not valid
@@ -100,4 +104,32 @@ public interface VirtualDesktopAccessor extends Library {
     int ViewGetByLastActivationOrder(HWND windows, UINT count, BOOL onlySwitcherWindows, BOOL onlyCurrentDesktop);
 
     int ViewGetLastActivationTimestamp(HWND windows); // Get last activation timestamp
+
+    public class VirtualDesktopListener extends Thread {
+        public static enum MESSAGE {
+            CURRENT_VIRTUAL_DESKTOP_CHANGED, VIEW_VIRTUAL_DESKTOP_CHANGED, VIRTUAL_DESKTOP_DESTROYED, VIRTUAL_DESKTOP_DESTROY_FAILED, VIRTUAL_DESKTOP_DESTROY_BEGIN, VIRTUAL_DESKTOP_CREATED
+        }
+
+        Listener listener;
+
+        public VirtualDesktopListener(Listener listener) {
+            this.listener = listener;
+            this.start();
+        }
+
+        @Override
+        public void run() {
+            VirtualDesktopAccessor.INSTANCE.RegisterPostMessageHook(Kernel32.INSTANCE.GetCurrentThreadId(), 0);
+            while (!isInterrupted()) {
+                MSG msg = new MSG();
+                User32.INSTANCE.GetMessage(msg, null, 0, 0);
+                listener.onMessage(msg);
+            }
+            super.run();
+        }
+
+        public interface Listener {
+            void onMessage(MSG msg);
+        }
+    }
 }
