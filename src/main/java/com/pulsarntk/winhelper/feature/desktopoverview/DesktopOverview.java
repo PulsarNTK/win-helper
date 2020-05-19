@@ -60,11 +60,14 @@ public class DesktopOverview extends JFrame implements Feature, Renderable, ASyn
     private Dimension margin = new Dimension(SCREEN_SIZE.width / 100 * 10, SCREEN_SIZE.height / 100 * 10);
     private Dimension animation = new Dimension(0, 0);
     private List<Desktop> desktops = new ArrayList<Desktop>();
+    private Dimension desktopSize = new Dimension(SCREEN_SIZE.width - (margin.width * 2), SCREEN_SIZE.height - (margin.height * 2));
+    private Dimension desktopCoord = new Dimension(margin.width + animation.width, margin.height);
     int currentDesktop = 0;
     int desktopCount = 0;
     Thread renderThread;
     int frames;
     public ASyncRenderer aSyncRenderer = new ASyncRenderer(this);
+    private Thread animationThread;
 
     public DesktopOverview() throws UnexpectedException, InterruptedException {
         super("Desktop Overview");
@@ -112,16 +115,29 @@ public class DesktopOverview extends JFrame implements Feature, Renderable, ASyn
         canvas.addMouseWheelListener(new MouseWheelListener() {
             public void mouseWheelMoved(MouseWheelEvent e) {
                 int rotation = e.getWheelRotation();
-                if (rotation == -1) {
-                    if (currentDesktop != 0) {
-                        currentDesktop--;
-                    }
-                } else if (rotation == 1) {
+                if (rotation == 1) {
                     if (currentDesktop != desktopCount - 1) {
+                        if (currentDesktop != 0) {
+                            desktops.get(currentDesktop - 1).getASyncRenderer().stopASyncRender();
+                        }
                         currentDesktop++;
+                        if (currentDesktop != desktopCount - 1) {
+                            desktops.get(currentDesktop + 1).getASyncRenderer().startASyncRender();
+                        }
+                        startAnimation(rotation);
+                    }
+                } else if (rotation == -1) {
+                    if (currentDesktop != 0) {
+                        if (currentDesktop != desktopCount - 1) {
+                            desktops.get(currentDesktop + 1).getASyncRenderer().stopASyncRender();
+                        }
+                        currentDesktop--;
+                        if (currentDesktop != 0) {
+                            desktops.get(currentDesktop - 1).getASyncRenderer().startASyncRender();
+                        }
+                        startAnimation(rotation);
                     }
                 }
-                System.out.println(currentDesktop);
             }
         });
 
@@ -132,10 +148,10 @@ public class DesktopOverview extends JFrame implements Feature, Renderable, ASyn
     public void setVisible(boolean visible) {
         if (visible) {
             aSyncRenderer.startASyncRender();
-            desktops.get(currentDesktop).getASyncRenderer().startASyncRender();
+            setDesktopsRender(true);
         } else {
             aSyncRenderer.stopASyncRender();
-            desktops.get(currentDesktop).getASyncRenderer().stopASyncRender();
+            setDesktopsRender(false);
         }
         super.setVisible(visible);
     }
@@ -164,13 +180,73 @@ public class DesktopOverview extends JFrame implements Feature, Renderable, ASyn
     public void render() {
         BufferStrategy buffer = canvas.getBufferStrategy();
         Graphics2D g2d = (Graphics2D) buffer.getDrawGraphics();
-        desktops.get(currentDesktop).getASyncRenderer().startASyncRender();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
         g2d.clearRect(0, 0, getWidth(), getHeight());
-        g2d.drawImage(desktops.get(currentDesktop).getImage(), margin.width, margin.height, SCREEN_SIZE.width - (margin.width * 2), SCREEN_SIZE.height - (margin.height * 2), null);
+        g2d.drawImage(desktops.get(currentDesktop).getImage(), desktopCoord.width + animation.width, desktopCoord.height + animation.height, desktopSize.width, desktopSize.height, null);
+        if (currentDesktop != desktopCount - 1) {
+            g2d.drawImage(desktops.get(currentDesktop + 1).getImage(), desktopCoord.width - (margin.width * 3 / 2) + SCREEN_SIZE.width + animation.width, margin.height, desktopSize.width, desktopSize.height, null);
+        }
+        if (currentDesktop != 0) {
+            g2d.drawImage(desktops.get(currentDesktop - 1).getImage(), desktopCoord.width + (margin.width * 3 / 2) - SCREEN_SIZE.width + animation.width, margin.height, desktopSize.width, desktopSize.height, null);
+        }
         buffer.show();
         System.out.println(frames++);
+    }
+
+    public void setDesktopsRender(boolean b) {
+        if (b) {
+            desktops.get(currentDesktop).getASyncRenderer().startASyncRender();
+            if (currentDesktop != desktopCount - 1) {
+                desktops.get(currentDesktop + 1).getASyncRenderer().startASyncRender();
+            }
+            if (currentDesktop != 0) {
+                desktops.get(currentDesktop - 1).getASyncRenderer().startASyncRender();
+            }
+        } else {
+            desktops.get(currentDesktop).getASyncRenderer().stopASyncRender();
+            if (currentDesktop != desktopCount - 1) {
+                desktops.get(currentDesktop + 1).getASyncRenderer().stopASyncRender();
+            }
+            if (currentDesktop != 0) {
+                desktops.get(currentDesktop - 1).getASyncRenderer().stopASyncRender();
+            }
+        }
+    }
+
+    public void startAnimation(int direction) {
+        animationThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                int j = SCREEN_SIZE.width - margin.width;
+                if (direction == 1) {
+                    for (int i = j; i > 0; i--) {
+                        animation.width = i;
+                        if (i % 10 == 0) {
+                            try {
+                                Thread.sleep(1);
+                            } catch (InterruptedException e1) {
+                                e1.printStackTrace();
+                            }
+                        }
+                    }
+                    animation.width = 0;
+                } else if (direction == -1) {
+                    for (int i = j; i > 0; i--) {
+                        animation.width = -i;
+                        if (i % 10 == 0) {
+                            try {
+                                Thread.sleep(1);
+                            } catch (InterruptedException e1) {
+                                e1.printStackTrace();
+                            }
+                        }
+                    }
+                    animation.width = 0;
+                }
+            }
+        });
+        animationThread.start();
     }
 
     public JPanel getSettingsPanel() {
