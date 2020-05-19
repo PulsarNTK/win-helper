@@ -1,22 +1,25 @@
 package com.pulsarntk.winhelper.feature.desktopoverview;
 
-import java.awt.Color;
 import java.rmi.UnexpectedException;
 import java.util.ArrayList;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import com.pulsarntk.winhelper.itf.ASyncRenderable;
+import com.pulsarntk.winhelper.itf.ASyncRenderable.ASyncRenderer;
 import com.pulsarntk.winhelper.itf.Configurable;
 import com.pulsarntk.winhelper.itf.Feature;
+import com.pulsarntk.winhelper.itf.Renderable;
 import com.pulsarntk.winhelper.lib.User32Extra;
 import com.pulsarntk.winhelper.lib.VirtualDesktopAccessor;
+import com.pulsarntk.winhelper.lib.VirtualDesktopAccessor.VirtualDesktopListener.Listener;
 import com.pulsarntk.winhelper.utils.RegisterHotkey;
 import com.pulsarntk.winhelper.utils.RegisterHotkey.VKMap;
 import com.pulsarntk.winhelper.utils.RegisterHotkey.HotkeyListener;
 import com.sun.jna.platform.win32.WinUser.MSG;
 import java.awt.*;
 import com.pulsarntk.winhelper.lib.VirtualDesktopAccessor;
+import com.pulsarntk.winhelper.lib.VirtualDesktopAccessor.VirtualDesktopListener;
 import com.sun.jna.platform.win32.WinDef.*;
-import java.awt.Graphics;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
@@ -48,34 +51,65 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import com.pulsarntk.winhelper.feature.desktopoverview.utils.WindowCapture;
 import com.pulsarntk.winhelper.feature.desktopoverview.utils.WindowInfo;
+import java.awt.image.BufferStrategy;
 
-
-public class DesktopOverview extends Canvas implements Feature {
+public class DesktopOverview extends JFrame implements Feature, Renderable, ASyncRenderable {
     private RegisterHotkey hotkey;
-    private JFrame frame = new JFrame("Desktop Overview");
-    private List<WindowInfo> wList = new ArrayList<WindowInfo>();
-    private List<Integer> order = new ArrayList<Integer>();
-    private Dimension size = getToolkit().getDefaultToolkit().getScreenSize();
-    private Dimension margin = new Dimension((int) size.getWidth() / 100 * 10, (int) size.getHeight() / 100 * 10);
+    private Canvas canvas = new Canvas();
+    private Dimension SCREEN_SIZE = Toolkit.getDefaultToolkit().getScreenSize();
+    private Dimension margin = new Dimension(SCREEN_SIZE.width / 100 * 10, SCREEN_SIZE.height / 100 * 10);
+    private Dimension animation = new Dimension(0, 0);
     private List<Desktop> desktops = new ArrayList<Desktop>();
     int currentDesktop = 0;
-
+    int desktopCount = 0;
+    Thread renderThread;
+    int frames;
+    public ASyncRenderer aSyncRenderer = new ASyncRenderer(this);
 
     public DesktopOverview() throws UnexpectedException, InterruptedException {
-        frame.setUndecorated(true);
-        // frame.setAlwaysOnTop(true);
-        frame.setSize(size);
-        frame.add(this);
-        frame.setBackground(new Color(0, 0, 0, 50));
+        super("Desktop Overview");
+        desktopCount = VirtualDesktopAccessor.INSTANCE.GetDesktopCount();
+        currentDesktop = VirtualDesktopAccessor.INSTANCE.GetCurrentDesktopNumber();
+        for (int i = 0; i < desktopCount; i++) {
+            desktops.add(new Desktop(i, SCREEN_SIZE));
+        }
+        getWindowsZOrder();
+
+        canvas.setSize(SCREEN_SIZE);
+        setUndecorated(true);
+        setLayout(new BorderLayout());
+        getContentPane().setBackground(Color.WHITE);
+        add(canvas);
+        pack();
+        canvas.createBufferStrategy(2);
+
 
         hotkey = new RegisterHotkey(VKMap.VK_TAB, 0x02);
         hotkey.setHotkeyListener(new HotkeyListener() {
             public void onKeyPress(MSG msg) {
-                frame.setVisible(!frame.isVisible());
+                setVisible(!isVisible());
+            }
+        });
+        new VirtualDesktopListener(new Listener() {
+            @Override
+            public void onMessage(MSG msg) {
+                switch (msg.message) {
+                    case VirtualDesktopListener.CURRENT_VIRTUAL_DESKTOP_CHANGED:
+                        currentDesktop = msg.wParam.intValue();
+                        break;
+                    case VirtualDesktopListener.VIRTUAL_DESKTOP_CREATED:
+                        desktopCount++;
+                        desktops.add(new Desktop(desktopCount, SCREEN_SIZE));
+                        break;
+                    case VirtualDesktopListener.VIRTUAL_DESKTOP_DESTROYED:
+                        desktopCount--;
+                        desktops.remove(msg.lParam.intValue() + 1);
+                        break;
+                }
             }
         });
 
-        addMouseWheelListener(new MouseWheelListener() {
+        canvas.addMouseWheelListener(new MouseWheelListener() {
             public void mouseWheelMoved(MouseWheelEvent e) {
                 int rotation = e.getWheelRotation();
                 if (rotation == -1) {
@@ -83,7 +117,7 @@ public class DesktopOverview extends Canvas implements Feature {
                         currentDesktop--;
                     }
                 } else if (rotation == 1) {
-                    if (currentDesktop != VirtualDesktopAccessor.INSTANCE.GetDesktopCount() - 1) {
+                    if (currentDesktop != desktopCount - 1) {
                         currentDesktop++;
                     }
                 }
@@ -91,61 +125,52 @@ public class DesktopOverview extends Canvas implements Feature {
             }
         });
 
-        int dCount = VirtualDesktopAccessor.INSTANCE.GetDesktopCount();
-        for (int i = 0; i < dCount; i++) {
-            desktops.add(new Desktop(i, size));
-        }
-        this.currentDesktop = VirtualDesktopAccessor.INSTANCE.GetCurrentDesktopNumber();
-        getWindowsZOrder();
 
-        while (true) {
-            frame.repaint();
+    }
+
+    @Override
+    public void setVisible(boolean visible) {
+        if (visible) {
+            aSyncRenderer.startASyncRender();
+            desktops.get(currentDesktop).getASyncRenderer().startASyncRender();
+        } else {
+            aSyncRenderer.stopASyncRender();
+            desktops.get(currentDesktop).getASyncRenderer().stopASyncRender();
         }
+        super.setVisible(visible);
     }
 
     private void getWindowsZOrder() {
-        order.clear();
-        wList.clear();
-        int top = User32Extra.INSTANCE.GetTopWindow(0);
-        while (top != 0) {
-            order.add(top);
-            top = User32Extra.INSTANCE.GetWindow(top, User32Extra.GW_HWNDNEXT);
-        }
         User32Extra.INSTANCE.EnumWindows(new User32Extra.WndEnumProc() {
             public boolean callback(int hwnd, int lParam) {
                 if (User32Extra.INSTANCE.IsWindowVisible(hwnd)) {
                     int desktopNumber = VirtualDesktopAccessor.INSTANCE.GetWindowDesktopNumber(hwnd);
                     if (desktopNumber != -1) {
-                        RECT r = new RECT();
-                        User32Extra.INSTANCE.GetWindowRect(hwnd, r);
+                        RECT rect = new RECT();
+                        User32Extra.INSTANCE.GetWindowRect(hwnd, rect);
                         byte[] buffer = new byte[1024];
                         User32Extra.INSTANCE.GetWindowTextA(hwnd, buffer, buffer.length);
-                        boolean isMaximized = User32Extra.INSTANCE.IsZoomed(hwnd);
                         String title = Native.toString(buffer);
-                        wList.add(new WindowInfo(hwnd, r, title, desktopNumber, isMaximized));
-                        desktops.get(desktopNumber).addWindow(new WindowInfo(hwnd, r, title, desktopNumber, isMaximized));
+                        boolean isMaximized = User32Extra.INSTANCE.IsZoomed(hwnd);
+                        desktops.get(desktopNumber).addWindowInfo(new WindowInfo(hwnd, rect, title, desktopNumber, isMaximized));
                     }
                 }
                 return true;
             }
         }, 0);
-        Collections.sort(wList, new Comparator<WindowInfo>() {
-            public int compare(WindowInfo o1, WindowInfo o2) {
-                return order.indexOf(o2.hwnd) - order.indexOf(o1.hwnd);
-            }
-        });
-        for (Desktop desktop : desktops) {
-            Collections.sort(desktop.wList, new Comparator<WindowInfo>() {
-                public int compare(WindowInfo o1, WindowInfo o2) {
-                    return order.indexOf(o2.hwnd) - order.indexOf(o1.hwnd);
-                }
-            });
-        }
     }
 
-    public void paint(Graphics g) {
-        g.clearRect(0, 0, getWidth(), getHeight());
-        g.drawImage(desktops.get(currentDesktop).render(), 0, 0, null);
+    @Override
+    public void render() {
+        BufferStrategy buffer = canvas.getBufferStrategy();
+        Graphics2D g2d = (Graphics2D) buffer.getDrawGraphics();
+        desktops.get(currentDesktop).getASyncRenderer().startASyncRender();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        g2d.clearRect(0, 0, getWidth(), getHeight());
+        g2d.drawImage(desktops.get(currentDesktop).getImage(), margin.width, margin.height, SCREEN_SIZE.width - (margin.width * 2), SCREEN_SIZE.height - (margin.height * 2), null);
+        buffer.show();
+        System.out.println(frames++);
     }
 
     public JPanel getSettingsPanel() {
@@ -155,4 +180,10 @@ public class DesktopOverview extends Canvas implements Feature {
     public String getDescription() {
         return null;
     }
+
+    @Override
+    public ASyncRenderer getASyncRenderer() {
+        return aSyncRenderer;
+    }
+
 }

@@ -106,9 +106,12 @@ public interface VirtualDesktopAccessor extends Library {
     int ViewGetLastActivationTimestamp(HWND windows); // Get last activation timestamp
 
     public class VirtualDesktopListener extends Thread {
-        public static enum MESSAGE {
-            CURRENT_VIRTUAL_DESKTOP_CHANGED, VIEW_VIRTUAL_DESKTOP_CHANGED, VIRTUAL_DESKTOP_DESTROYED, VIRTUAL_DESKTOP_DESTROY_FAILED, VIRTUAL_DESKTOP_DESTROY_BEGIN, VIRTUAL_DESKTOP_CREATED
-        }
+        public static final int CURRENT_VIRTUAL_DESKTOP_CHANGED = 0;
+        public static final int VIEW_VIRTUAL_DESKTOP_CHANGED = 1;
+        public static final int VIRTUAL_DESKTOP_DESTROYED = 2;
+        public static final int VIRTUAL_DESKTOP_DESTROY_FAILED = 3;
+        public static final int VIRTUAL_DESKTOP_DESTROY_BEGIN = 4;
+        public static final int VIRTUAL_DESKTOP_CREATED = 5;
 
         Listener listener;
 
