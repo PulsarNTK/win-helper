@@ -1,7 +1,7 @@
 package com.pulsarntk.winhelper.itf;
 
-import javax.swing.JPanel;
+import javax.swing.JFrame;
 
 public interface Configurable {
-    JPanel getSettingsPanel();
+    JFrame getSettingsFrame();
 }
