@@ -1,29 +1,28 @@
 package com.pulsarntk.winhelper.settings;
 
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import com.pulsarntk.winhelper.itf.Feature;
 
-public class Settings extends JFrame {
-    JPanel topPanel = new JPanel(new GridLayout(0, 1));
+public class Settings extends Setting {
+    public JFrame frame = new JFrame("Settings");
+    public JPanel topPanel = new JPanel(new GridLayout(0, 1));
 
     public Settings(ArrayList<Feature> fList) {
         super("Settings");
-        setContentPane(topPanel);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setContentPane(topPanel);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         for (Feature feature : fList) {
-            x(feature);
+            add(feature, newSettings(feature.getName()));
         }
-        pack();
-        setResizable(false);
-        // setVisible(true);
+        frame.pack();
+        frame.setResizable(false);
     }
 
-    private void x(Feature feature) {
-        final Feature f = feature;
+    private void add(Feature feature, Setting setting) {
         final GridBagLayout layout = new GridBagLayout();
         final GridBagConstraints c = new GridBagConstraints();
         final JPanel panel = new JPanel(layout);
@@ -32,19 +31,38 @@ public class Settings extends JFrame {
         final JCheckBox checkBox = new JCheckBox();
         final JLabel label = new JLabel(feature.getName());
         final JButton button = new JButton(icon);
+        final boolean enabled = setting.optBoolean("enabled");
 
 
         panel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
 
-        button.setEnabled(false);
+        button.setEnabled(enabled);
+        checkBox.setSelected(enabled);
 
         label.setFont(new Font("Consolas", Font.PLAIN, 18));
         label.setToolTipText(feature.getDescription());
 
-        checkBox.addChangeListener(new ChangeListener() {
-            public void stateChanged(ChangeEvent e) {
+        checkBox.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
                 button.setEnabled(checkBox.isSelected());
+                setting.put("enabled", checkBox.isSelected());
+                if (checkBox.isSelected())
+                    feature.enable();
+                else if (!checkBox.isSelected())
+                    feature.disable();
+
             }
+        });
+
+        button.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                feature.getSettingsFrame().setVisible(true);
+            }
+
         });
 
         c.gridx = 0;

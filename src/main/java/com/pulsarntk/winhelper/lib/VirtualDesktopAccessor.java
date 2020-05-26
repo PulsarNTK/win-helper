@@ -114,6 +114,7 @@ public interface VirtualDesktopAccessor extends Library {
         public static final int VIRTUAL_DESKTOP_CREATED = 5;
 
         Listener listener;
+        public int threadId = 0;
 
         public VirtualDesktopListener(Listener listener) {
             this.listener = listener;
@@ -122,6 +123,7 @@ public interface VirtualDesktopAccessor extends Library {
 
         @Override
         public void run() {
+            threadId = Kernel32.INSTANCE.GetCurrentThreadId();
             VirtualDesktopAccessor.INSTANCE.RegisterPostMessageHook(Kernel32.INSTANCE.GetCurrentThreadId(), 0);
             while (!isInterrupted()) {
                 MSG msg = new MSG();
