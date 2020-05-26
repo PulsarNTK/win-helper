@@ -1,6 +1,5 @@
 package com.pulsarntk.winhelper.feature.desktopoverview;
 
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.util.ArrayList;
@@ -20,18 +19,12 @@ public class Desktop implements ASyncRenderable {
     private List<Thread> tList = new ArrayList<Thread>();
     public Dimension size;
     private BufferedImage image;
-    private BufferedImage bufferedImage;
     public ASyncRenderer aSyncRenderer = new ASyncRenderer(this);
-    public Graphics graphics;
 
 
     public Desktop(int desktopNumber, Dimension size) {
         this.desktopNumber = desktopNumber;
         this.size = size;
-        this.image = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
-        this.bufferedImage = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
-        this.graphics = bufferedImage.getGraphics();
-        this.graphics.setColor(new Color(0, 0, 0, 255));
     }
 
     public BufferedImage getImage() {
@@ -45,9 +38,10 @@ public class Desktop implements ASyncRenderable {
 
     @Override
     public void render() {
-        graphics.drawRect(-1, -1, size.width + 1, size.height + 1);
         if (this.wList.size() == 0)
             return;
+        BufferedImage image = new BufferedImage((int) size.getWidth(), (int) size.getHeight(), BufferedImage.TYPE_INT_RGB);
+        Graphics graphics = image.getGraphics();
         for (WindowInfo wInfo : wList) {
             Thread t = new Thread(new WindowRenderer(wInfo));
             this.tList.add(t);
@@ -64,7 +58,7 @@ public class Desktop implements ASyncRenderable {
             graphics.drawImage(wInfo.image, wInfo.rect.left, wInfo.rect.top, null);
         }
         tList.clear();
-        this.image = bufferedImage;
+        this.image = image;
     }
 
     public void clearList() {

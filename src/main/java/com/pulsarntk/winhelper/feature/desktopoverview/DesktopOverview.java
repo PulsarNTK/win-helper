@@ -2,7 +2,6 @@ package com.pulsarntk.winhelper.feature.desktopoverview;
 
 import java.rmi.UnexpectedException;
 import java.util.ArrayList;
-import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import com.pulsarntk.winhelper.itf.ASyncRenderable;
@@ -54,7 +53,7 @@ import com.pulsarntk.winhelper.feature.desktopoverview.utils.WindowCapture;
 import com.pulsarntk.winhelper.feature.desktopoverview.utils.WindowInfo;
 import java.awt.image.BufferStrategy;
 
-public class DesktopOverview extends JFrame implements Feature, ASyncRenderable {
+public class DesktopOverview extends JFrame implements Feature, Renderable, ASyncRenderable {
     private RegisterHotkey hotkey;
     private Canvas canvas = new Canvas();
     private Dimension SCREEN_SIZE = Toolkit.getDefaultToolkit().getScreenSize();
@@ -63,10 +62,10 @@ public class DesktopOverview extends JFrame implements Feature, ASyncRenderable 
     private List<Desktop> desktops = new ArrayList<Desktop>();
     private Dimension desktopSize = new Dimension(SCREEN_SIZE.width - (margin.width * 2), SCREEN_SIZE.height - (margin.height * 2));
     private Dimension desktopCoord = new Dimension(margin.width + animation.width, margin.height);
-    private int currentDesktop = 0;
-    private int desktopCount = 0;
-    private Thread renderThread;
-    private int frames;
+    int currentDesktop = 0;
+    int desktopCount = 0;
+    Thread renderThread;
+    int frames;
     public ASyncRenderer aSyncRenderer = new ASyncRenderer(this);
     private Thread animationThread;
 
@@ -94,7 +93,6 @@ public class DesktopOverview extends JFrame implements Feature, ASyncRenderable 
                 setVisible(!isVisible());
             }
         });
-
         new VirtualDesktopListener(new Listener() {
             @Override
             public void onMessage(MSG msg) {
@@ -251,16 +249,17 @@ public class DesktopOverview extends JFrame implements Feature, ASyncRenderable 
         animationThread.start();
     }
 
-    public JFrame getSettingsFrame() {
+    public JPanel getSettingsPanel() {
         return null;
     }
 
     public String getDescription() {
-        return "Desktop Overview";
+        return null;
     }
 
     @Override
     public ASyncRenderer getASyncRenderer() {
         return aSyncRenderer;
     }
+
 }

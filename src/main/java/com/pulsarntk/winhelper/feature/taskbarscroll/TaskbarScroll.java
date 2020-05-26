@@ -1,8 +1,6 @@
 package com.pulsarntk.winhelper.feature.taskbarscroll;
 
 import javax.swing.JCheckBox;
-import javax.swing.JDialog;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import com.pulsarntk.winhelper.itf.Feature;
@@ -47,8 +45,8 @@ public class TaskbarScroll implements Feature {
         }
     }
 
-    public JFrame getSettingsFrame() {
-        return null;
+    public JPanel getSettingsPanel() {
+        return settings;
     }
 
     public String getName() {
@@ -57,13 +55,5 @@ public class TaskbarScroll implements Feature {
 
     public String getDescription() {
         return this.DESCRIPTION;
-    }
-
-    @Override
-    public void enable() {
-    }
-
-    @Override
-    public void disable() {
     }
 }

@@ -37,16 +37,6 @@ public interface User32Extra extends User32 {
 
     boolean GetCursorPos(long[] lpPoint);
 
-    void SystemParametersInfo(long x, int z, String y, long r);
-
-    boolean PostThreadMessageA(int hWnd, int msg, int wParam, int lParam);
-
-    boolean UnregisterHotKey(int hwnd, int id);
-
-    long SPI_SETDESKWALLPAPER = 20;
-    long SPIF_UPDATEINIFILE = 0x01;
-    long SPIF_SENDWININICHANGE = 0x02;
-
     public static interface WndEnumProc extends StdCallLibrary.StdCallCallback {
         boolean callback(int hwnd, int lParam);
     }
