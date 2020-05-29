@@ -47,10 +47,6 @@ public class TaskbarScroll implements Feature {
         }
     }
 
-    public JFrame getSettingsFrame() {
-        return null;
-    }
-
     public String getName() {
         return this.NAME;
     }
@@ -65,5 +61,18 @@ public class TaskbarScroll implements Feature {
 
     @Override
     public void disable() {
+    }
+
+    @Override
+    public void readFromJson() {
+    }
+
+    @Override
+    public void writeToJson() {
+    }
+
+    @Override
+    public JDialog getOptionsDialog() {
+        return null;
     }
 }

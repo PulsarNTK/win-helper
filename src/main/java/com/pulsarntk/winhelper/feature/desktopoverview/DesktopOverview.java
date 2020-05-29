@@ -14,7 +14,6 @@ import com.pulsarntk.winhelper.lib.User32Extra;
 import com.pulsarntk.winhelper.lib.VirtualDesktopAccessor;
 import com.pulsarntk.winhelper.lib.VirtualDesktopAccessor.VirtualDesktopListener.Listener;
 import com.pulsarntk.winhelper.utils.RegisterHotkey;
-import com.pulsarntk.winhelper.utils.RegisterHotkey.VKMap;
 import com.pulsarntk.winhelper.utils.RegisterHotkey.HotkeyListener;
 import com.sun.jna.platform.win32.WinUser.MSG;
 import java.awt.*;
@@ -88,12 +87,12 @@ public class DesktopOverview extends JFrame implements Feature, ASyncRenderable 
         canvas.createBufferStrategy(2);
 
 
-        hotkey = new RegisterHotkey(VKMap.VK_TAB, 0x02);
-        hotkey.setHotkeyListener(new HotkeyListener() {
-            public void onKeyPress(MSG msg) {
-                setVisible(!isVisible());
-            }
-        });
+        // hotkey = new RegisterHotkey(VKMap.VK_TAB, 0x02);
+        // hotkey.setHotkeyListener(new HotkeyListener() {
+        // public void onKeyPress(MSG msg) {
+        // setVisible(!isVisible());
+        // }
+        // });
 
         new VirtualDesktopListener(new Listener() {
             @Override
@@ -251,7 +250,7 @@ public class DesktopOverview extends JFrame implements Feature, ASyncRenderable 
         animationThread.start();
     }
 
-    public JFrame getSettingsFrame() {
+    public JDialog getOptionsDialog() {
         return null;
     }
 
@@ -262,5 +261,13 @@ public class DesktopOverview extends JFrame implements Feature, ASyncRenderable 
     @Override
     public ASyncRenderer getASyncRenderer() {
         return aSyncRenderer;
+    }
+
+    @Override
+    public void readFromJson() {
+    }
+
+    @Override
+    public void writeToJson() {
     }
 }

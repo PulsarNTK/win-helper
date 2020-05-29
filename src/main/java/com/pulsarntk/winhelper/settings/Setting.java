@@ -52,7 +52,7 @@ public class Setting extends JSONObject {
         return this;
     }
 
-    private static void writeToFile() {
+    public static void writeToFile() {
         if (isFileValid()) {
             try {
                 fileWriter = new FileWriter(settingsFile);

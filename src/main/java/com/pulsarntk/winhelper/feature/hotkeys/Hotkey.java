@@ -1,14 +1,10 @@
 package com.pulsarntk.winhelper.feature.hotkeys;
 
-import java.rmi.UnexpectedException;
+import com.pulsarntk.winhelper.feature.hotkeys.action.itf.Action;
 import com.pulsarntk.winhelper.utils.RegisterHotkey;
-import com.pulsarntk.winhelper.utils.RegisterHotkey.HotkeyListener;
-import com.pulsarntk.winhelper.utils.RegisterHotkey.KEY;
-import com.sun.jna.platform.win32.WinUser.MSG;
 
-public class Hotkey {
-    public RegisterHotkey hotkey;
-    public ACTION action;
+public class Hotkey extends RegisterHotkey {
+    public Action action;
     public KEY key;
     public boolean ctrl;
     public boolean shift;
@@ -16,18 +12,8 @@ public class Hotkey {
     public boolean windows;
     public boolean active;
 
-    public Hotkey(ACTION action, KEY key, boolean ctrl, boolean shift, boolean alt, boolean windows, boolean active) {
-        try {
-            hotkey = new RegisterHotkey(key.code, modifiersToInt(ctrl, shift, alt, windows));
-            hotkey.setHotkeyListener(new HotkeyListener() {
-                @Override
-                public void onKeyPress(MSG msg) {
-                    System.out.println("\nTick: " + System.currentTimeMillis() + "\nMSG: " + msg.message);
-                }
-            });
-        } catch (UnexpectedException | InterruptedException e) {
-            e.printStackTrace();
-        }
+    public Hotkey(Action action, KEY key, boolean ctrl, boolean shift, boolean alt, boolean windows, boolean active) {
+        super(key.code, modifiersToInt(ctrl, shift, alt, windows));
         this.action = action;
         this.key = key;
         this.ctrl = ctrl;
@@ -35,27 +21,23 @@ public class Hotkey {
         this.alt = alt;
         this.windows = windows;
         this.active = active;
+        setHotkeyListener(action.getListener());
     }
 
-    public void updateHotkey() {
-        unRegisterHotkey();
+    public boolean updateHotkey() {
         if (active) {
-            hotkey.vKCode = key.code;
-            hotkey.fsModifiers = modifiersToInt(ctrl, shift, alt, windows);
-            registerHotkey();
+            unRegister();
+            vKCode = key.code;
+            fsModifiers = modifiersToInt(ctrl, shift, alt, windows);
+            setHotkeyListener(action.getListener());
+            return register();
         }
+        return unRegister();
     }
 
-    public void registerHotkey() {
-        hotkey.register();
-    }
-
-    public void unRegisterHotkey() {
-        hotkey.unRegister();
-    }
 
     public String getAction() {
-        return action.name();
+        return action.getName();
     }
 
     public String getKey() {
@@ -82,7 +64,7 @@ public class Hotkey {
         return active;
     }
 
-    public int modifiersToInt(boolean ctrl, boolean shift, boolean alt, boolean windows) {
+    public static int modifiersToInt(boolean ctrl, boolean shift, boolean alt, boolean windows) {
         int modifier = 0;
         if (ctrl)
             modifier |= 0x02;
@@ -93,9 +75,5 @@ public class Hotkey {
         if (windows)
             modifier |= 0x08;
         return modifier;
-    }
-
-    public static enum ACTION {
-        NONE, GO_NEXT_DESKTOP, GO_PREVIOUS_DESKTOP
     }
 }

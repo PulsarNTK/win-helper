@@ -60,7 +60,7 @@ public class Settings extends Setting {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                feature.getSettingsFrame().setVisible(true);
+                feature.getOptionsDialog().setVisible(true);
             }
 
         });

@@ -37,7 +37,7 @@ public class DesktopBackground implements Feature {
     }
 
     @Override
-    public JFrame getSettingsFrame() {
+    public JDialog getOptionsDialog() {
         return settings.frame;
     }
 
@@ -53,7 +53,7 @@ public class DesktopBackground implements Feature {
     }
 
     private static class Settings {
-        private JFrame frame = new JFrame("Desktop Background Settings");
+        private JDialog frame = new JDialog((JFrame) null, "Desktop Background Settings");
         private JPanel backgroundPanel = new JPanel(new GridLayout(0, 1));
         private List<FileSelector> backgrounds = new ArrayList<FileSelector>();
         private Setting setting = new Setting("Desktop Background");
@@ -179,5 +179,13 @@ public class DesktopBackground implements Feature {
     @Override
     public void disable() {
         VirtualDesktopAccessor.INSTANCE.UnregisterPostMessageHook(listener.threadId);
+    }
+
+    @Override
+    public void readFromJson() {
+    }
+
+    @Override
+    public void writeToJson() {
     }
 }

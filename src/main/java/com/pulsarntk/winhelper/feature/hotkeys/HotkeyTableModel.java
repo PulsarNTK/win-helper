@@ -1,24 +1,25 @@
 package com.pulsarntk.winhelper.feature.hotkeys;
 
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
 import javax.swing.table.AbstractTableModel;
 
 import com.pulsarntk.winhelper.utils.RegisterHotkey.KEY;
+import com.pulsarntk.winhelper.feature.hotkeys.action.itf.Action;
 
 import java.util.Vector;
 
-final class HotkeyTableModel extends AbstractTableModel implements TableModelListener {
-    private String[] ColumNames = { "Action", "Hotkey", "Ctrl", "Shift", "Alt", "Windows", "Active" };
+final class HotkeyTableModel extends AbstractTableModel {
+    private String[] ColumNames = {"Action", "Hotkey", "Ctrl", "Shift", "Alt", "Windows", "Active"};
     private final Vector<Hotkey> data;
 
     public HotkeyTableModel(Vector<Hotkey> hotkeys) {
         this.data = hotkeys;
-        addTableModelListener(this);
     }
 
     public void add(Hotkey hotkey) {
         data.add(hotkey);
+        if (!hotkey.updateHotkey()) {
+            // hotkey.action = Action.ERROR;
+        }
         fireTableDataChanged();
     }
 
@@ -79,7 +80,7 @@ final class HotkeyTableModel extends AbstractTableModel implements TableModelLis
         Hotkey h = data.get(rowIndex);
         switch (columnIndex) {
             case 0:
-                h.action = (Hotkey.ACTION) aValue;
+                h.action = (Action) aValue;
                 break;
             case 1:
                 h.key = (KEY) aValue;
@@ -100,12 +101,10 @@ final class HotkeyTableModel extends AbstractTableModel implements TableModelLis
                 h.active = (Boolean) aValue;
                 break;
         }
+        if (!h.updateHotkey()) {
+            // h.action = ACTION.ERROR;
+        }
         fireTableDataChanged();
-        h.updateHotkey();
-    }
-
-    @Override
-    public void tableChanged(TableModelEvent e) {
     }
 
 }

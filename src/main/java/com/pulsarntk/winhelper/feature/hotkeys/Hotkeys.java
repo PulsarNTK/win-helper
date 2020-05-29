@@ -3,6 +3,7 @@ package com.pulsarntk.winhelper.feature.hotkeys;
 import javax.swing.DefaultCellEditor;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -10,7 +11,9 @@ import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
-
+import javax.swing.table.TableCellRenderer;
+import com.pulsarntk.winhelper.feature.hotkeys.action.Actions;
+import com.pulsarntk.winhelper.feature.hotkeys.action.itf.Action;
 import com.pulsarntk.winhelper.itf.Feature;
 import com.pulsarntk.winhelper.settings.Setting;
 import com.pulsarntk.winhelper.utils.RegisterHotkey.KEY;
@@ -19,6 +22,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -26,9 +30,10 @@ import java.util.Vector;
 
 public class Hotkeys implements Feature {
     Settings settings = new Settings("Hotkeys");
+    Actions actions = new Actions();
 
     class Settings extends Setting {
-        public JFrame frame = new JFrame();
+        public JDialog frame = new JDialog((JFrame) null);
         public JScrollPane hotkeysPanel;
         public JPanel buttonPanel = new JPanel();
         public final Vector<Hotkey> hotkeys = new Vector<Hotkey>();
@@ -46,10 +51,8 @@ public class Hotkeys implements Feature {
             table.getSelectionModel().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
             table.setFillsViewportHeight(true);
             hotkeysPanel.setPreferredSize(new Dimension(0, 360 - 72));
-            table.getColumnModel().getColumn(0)
-                    .setCellEditor(new DefaultCellEditor(new JComboBox<>(Hotkey.ACTION.values())));
-            table.getColumnModel().getColumn(1)
-                    .setCellEditor(new DefaultCellEditor(new JComboBox<>(KEY.getDefinedKeys())));
+            table.getColumnModel().getColumn(0).setCellEditor(new DefaultCellEditor(new JComboBox<>(Actions.getActions().values().toArray())));
+            table.getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(new JComboBox<>(KEY.getDefinedKeys())));
             table.getColumnModel().getColumn(0).setPreferredWidth(192);
             table.getColumnModel().getColumn(1).setPreferredWidth(128);
 
@@ -78,7 +81,6 @@ public class Hotkeys implements Feature {
             });
 
             tableModel.addTableModelListener(new TableModelListener() {
-
                 @Override
                 public void tableChanged(TableModelEvent e) {
                     writeToJson();
@@ -105,17 +107,19 @@ public class Hotkeys implements Feature {
             if (jsonArray == null)
                 return;
             for (Object object : jsonArray) {
-                tableModel.add(new Hotkey(Hotkey.ACTION.valueOf(((JSONObject) object).optString("action")),
-                        KEY.valueOf(((JSONObject) object).optString("key")), ((JSONObject) object).optBoolean("ctrl"),
-                        ((JSONObject) object).optBoolean("shift"), ((JSONObject) object).optBoolean("alt"),
-                        ((JSONObject) object).optBoolean("windows"), ((JSONObject) object).optBoolean("active")));
+                try {
+                    tableModel.add(new Hotkey(Actions.getActionOrDefault(((JSONObject) object).optString("action")), KEY.valueOf(((JSONObject) object).optString("key")), ((JSONObject) object).optBoolean("ctrl"),
+                            ((JSONObject) object).optBoolean("shift"), ((JSONObject) object).optBoolean("alt"), ((JSONObject) object).optBoolean("windows"), ((JSONObject) object).optBoolean("active")));
+                } catch (IllegalArgumentException e) {
+                    System.out.println(e.getMessage());
+                }
             }
         }
 
     }
 
     @Override
-    public JFrame getSettingsFrame() {
+    public JDialog getOptionsDialog() {
         return settings.frame;
     }
 
@@ -135,6 +139,16 @@ public class Hotkeys implements Feature {
 
     @Override
     public void disable() {
+    }
+
+    @Override
+    public void readFromJson() {
+
+    }
+
+    @Override
+    public void writeToJson() {
+
     }
 
 }
