@@ -6,11 +6,11 @@ public interface ASyncRenderable extends Renderable {
     public ASyncRenderer getASyncRenderer();
 
     public class ASyncRenderer implements Runnable {
-        private Renderable renderable;
-        private Thread renderThread = new Thread();
-        private long lastRender = 0;
-        private long sleepBetweenFrames = 0;
-        private boolean status = false;
+        protected Renderable renderable;
+        protected Thread renderThread = new Thread();
+        protected long lastRender = 0;
+        protected long sleepBetweenFrames = 0;
+        protected boolean status = false;
 
         public ASyncRenderer(Renderable renderable) {
             this.renderable = renderable;

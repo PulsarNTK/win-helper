@@ -118,19 +118,36 @@ public interface VirtualDesktopAccessor extends Library {
 
         public VirtualDesktopListener(Listener listener) {
             this.listener = listener;
-            this.start();
+            synchronized (this) {
+                this.start();
+                try {
+                    wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }
 
         @Override
         public void run() {
-            threadId = Kernel32.INSTANCE.GetCurrentThreadId();
-            VirtualDesktopAccessor.INSTANCE.RegisterPostMessageHook(Kernel32.INSTANCE.GetCurrentThreadId(), 0);
+            synchronized (this) {
+                threadId = Kernel32.INSTANCE.GetCurrentThreadId();
+                notify();
+            }
             while (!isInterrupted()) {
                 MSG msg = new MSG();
                 User32.INSTANCE.GetMessage(msg, null, 0, 0);
                 listener.onMessage(msg);
             }
             super.run();
+        }
+
+        public void unRegister() {
+            VirtualDesktopAccessor.INSTANCE.UnregisterPostMessageHook(threadId);
+        }
+
+        public void register() {
+            VirtualDesktopAccessor.INSTANCE.RegisterPostMessageHook(threadId, 0);
         }
 
         public interface Listener {

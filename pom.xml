@@ -50,6 +50,7 @@
 
   </dependencies>
   <build>
+    <finalName>Win Helper</finalName>
     <plugins>
       <!-- <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -86,17 +87,14 @@
           </archive>
         </configuration>
       </plugin>
-      <plugin>
+      <!-- <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <version>1.2.1</version>
         <configuration>
           <mainClass>com.pulsarntk.winhelper.App</mainClass>
-          <arguments>
-            <argument>argument1</argument>
-          </arguments>
         </configuration>
-      </plugin>
+      </plugin> -->
       <plugin>
         <artifactId>plantuml-generator-maven-plugin</artifactId>
         <groupId>de.elnarion.maven</groupId>
@@ -109,14 +107,14 @@
             </goals>
             <phase>generate-test-sources</phase>
             <configuration>
-              <outputFilename>PACKAGE_UML.txt</outputFilename>
+              <outputFilename>uml.txt</outputFilename>
               <scanPackages>
                 <scanPackage>
-                  com.pulsarntk.winhelper
+                  com.pulsarntk.winhelper.feature
               </scanPackage>
               </scanPackages>
 
-              <blacklistRegexp>.*VKMap.*</blacklistRegexp>
+              <blacklistRegexp>.*KEY.*|.*\$[0-9].*</blacklistRegexp>
             </configuration>
           </execution>
         </executions>

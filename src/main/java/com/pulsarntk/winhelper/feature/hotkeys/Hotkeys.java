@@ -17,6 +17,8 @@ import com.pulsarntk.winhelper.feature.hotkeys.action.itf.Action;
 import com.pulsarntk.winhelper.itf.Feature;
 import com.pulsarntk.winhelper.settings.Setting;
 import com.pulsarntk.winhelper.utils.RegisterHotkey.KEY;
+import com.pulsarntk.winhelper.feature.hotkeys.gui.HotkeyAddDialog;
+import com.pulsarntk.winhelper.feature.hotkeys.gui.HotkeyTableModel;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -26,7 +28,9 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.List;
 import java.util.Vector;
+import java.util.stream.Collectors;
 
 public class Hotkeys implements Feature {
     Settings settings = new Settings("Hotkeys");
@@ -118,6 +122,10 @@ public class Hotkeys implements Feature {
 
     }
 
+    public List<Hotkey> getActiveHotkeys() {
+        return settings.hotkeys.stream().filter(h -> h.active).collect(Collectors.toList());
+    }
+
     @Override
     public JDialog getOptionsDialog() {
         return settings.frame;
@@ -135,10 +143,16 @@ public class Hotkeys implements Feature {
 
     @Override
     public void enable() {
+        for (Hotkey hotkey : getActiveHotkeys()) {
+            hotkey.register();
+        }
     }
 
     @Override
     public void disable() {
+        for (Hotkey hotkey : getActiveHotkeys()) {
+            hotkey.unRegister();
+        }
     }
 
     @Override

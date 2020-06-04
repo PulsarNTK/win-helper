@@ -1,4 +1,4 @@
-package com.pulsarntk.winhelper.feature.hotkeys;
+package com.pulsarntk.winhelper.feature.hotkeys.gui;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -8,6 +8,7 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.UIManager;
+import com.pulsarntk.winhelper.feature.hotkeys.Hotkey;
 import com.pulsarntk.winhelper.feature.hotkeys.action.Actions;
 import com.pulsarntk.winhelper.feature.hotkeys.action.handler.CustomActionHandler;
 import com.pulsarntk.winhelper.feature.hotkeys.action.itf.Action;
@@ -21,7 +22,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 
-final class HotkeyAddDialog extends JDialog {
+public class HotkeyAddDialog extends JDialog {
     public JPanel panel = new JPanel();
     public JComboBox<KEY> keyComboBox = new JComboBox<KEY>(KEY.getDefinedKeys());
     public JComboBox<Action> actionComboBox = new JComboBox<Action>();

@@ -4,92 +4,92 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
 import java.util.List;
-import com.pulsarntk.winhelper.feature.desktopoverview.utils.WindowCapture;
-import com.pulsarntk.winhelper.feature.desktopoverview.utils.WindowInfo;
-import com.pulsarntk.winhelper.itf.ASyncRenderable;
-import com.pulsarntk.winhelper.itf.ASyncRenderable.ASyncRenderer;
+import com.pulsarntk.winhelper.feature.desktopoverview.Window;
+import com.pulsarntk.winhelper.itf.ASyncImageRenderer;
 import com.pulsarntk.winhelper.itf.Renderable;
 import java.awt.image.BufferedImage;
 
 
 
-public class Desktop implements ASyncRenderable {
+public class Desktop extends ASyncImageRenderer {
     public int desktopNumber;
-    private List<WindowInfo> wList = new ArrayList<WindowInfo>();
-    private List<Thread> tList = new ArrayList<Thread>();
+    private List<Window> windows = new ArrayList<Window>();
     public Dimension size;
-    private BufferedImage image;
-    private BufferedImage bufferedImage;
-    public ASyncRenderer aSyncRenderer = new ASyncRenderer(this);
+
     public Graphics graphics;
+    public boolean status = false;
 
 
     public Desktop(int desktopNumber, Dimension size) {
+        super(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
         this.desktopNumber = desktopNumber;
         this.size = size;
-        this.image = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
-        this.bufferedImage = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
-        this.graphics = bufferedImage.getGraphics();
-        this.graphics.setColor(new Color(0, 0, 0, 255));
     }
 
-    public BufferedImage getImage() {
-        return this.image;
+    public void clearList() {
+        this.windows.clear();
     }
 
-    public BufferedImage renderGetImage() {
-        this.render();
-        return this.image;
+    public void setWindowsRender(boolean b) {
+        for (Window window : windows) {
+            window.setASyncRender(b);
+        }
+    }
+
+    public void setWindowsFrameRate(int frameRate) {
+        for (Window window : windows) {
+            window.setFrameRate(frameRate);
+        }
+    }
+
+    public void addWindow(Window window) {
+        windows.add(0, window);
     }
 
     @Override
     public void render() {
+        graphics = bufferedImage.getGraphics();
+        graphics.setColor(new Color(0, 0, 0, 255));
         graphics.drawRect(-1, -1, size.width + 1, size.height + 1);
-        if (this.wList.size() == 0)
-            return;
-        for (WindowInfo wInfo : wList) {
-            Thread t = new Thread(new WindowRenderer(wInfo));
-            this.tList.add(t);
-            t.start();
+        for (Window window : windows) {
+            graphics.drawImage(window.getImage(), window.rect.left, window.rect.top, null);
         }
-        for (Thread thread : tList) {
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        for (WindowInfo wInfo : wList) {
-            graphics.drawImage(wInfo.image, wInfo.rect.left, wInfo.rect.top, null);
-        }
-        tList.clear();
-        this.image = bufferedImage;
-    }
-
-    public void clearList() {
-        this.wList.clear();
-    }
-
-
-    public void addWindowInfo(WindowInfo wInfo) {
-        wList.add(0, wInfo);
-    }
-
-    private class WindowRenderer implements Runnable {
-        WindowInfo wInfo;
-
-        public WindowRenderer(WindowInfo wInfo) {
-            this.wInfo = wInfo;
-        }
-
-        public void run() {
-            WindowCapture.capture(wInfo);
-        }
+        graphics.dispose();
     }
 
     @Override
-    public ASyncRenderer getASyncRenderer() {
-        return aSyncRenderer;
+    public void setFrameRate(long frameRate) {
+        for (Window window : windows) {
+            window.setFrameRate(frameRate);
+        }
+        super.setFrameRate(frameRate);
     }
+
+    @Override
+    public void setASyncRender(boolean b) {
+        for (Window window : windows) {
+            window.setASyncRender(b);
+        }
+        super.setASyncRender(b);
+    }
+
+
+    @Override
+    public void startASyncRender() {
+        for (Window window : windows) {
+            window.startASyncRender();
+        }
+        super.startASyncRender();
+    }
+
+    @Override
+    public void stopASyncRender() {
+        for (Window window : windows) {
+            window.stopASyncRender();
+        }
+        super.stopASyncRender();
+    }
+
 }

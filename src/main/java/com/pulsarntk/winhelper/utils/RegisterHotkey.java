@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Stream;
+import com.pulsarntk.winhelper.lib.Kernel32Extra;
 import com.pulsarntk.winhelper.lib.User32Extra;
 import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinUser.MSG;
@@ -39,7 +40,7 @@ public class RegisterHotkey {
                                     if (User32Extra.INSTANCE.RegisterHotKey(null, rh.id, rh.fsModifiers, rh.vKCode)) {
                                         rh.status = true;
                                     } else {
-                                        System.out.println("An error occured when REGISTER hotkey!");
+                                        System.out.println("An error occured when REGISTER hotkey! -> GetLastError:" + Kernel32Extra.INSTANCE.GetLastError());
                                     }
                                     break;
                                 case 0x0315:
@@ -79,7 +80,6 @@ public class RegisterHotkey {
             this.id = new Random().nextInt(Integer.MAX_VALUE);
         } while (hotkeys.get(this.id) != null);
         hotkeys.put(this.id, this);
-        register();
     }
 
     public boolean register() {

@@ -18,16 +18,17 @@ import com.pulsarntk.winhelper.lib.Kernel32Extra;
 import com.pulsarntk.winhelper.lib.VirtualDesktopAccessor;
 import com.pulsarntk.winhelper.lib.VirtualDesktopAccessor.VirtualDesktopListener;
 import com.sun.jna.platform.win32.*;
+import com.sun.jna.Memory;
 
 public class App {
 	public static ArrayList<Feature> features = new ArrayList<Feature>();
 
 	public static void main(String[] args) throws UnexpectedException, InterruptedException {
-
 		FlatDarkLaf.install();
 		addFeature(new DesktopBackground());
 		addFeature(new TaskbarScroll());
 		addFeature(new Hotkeys());
+		addFeature(new DesktopOverview());
 		Settings settings = new Settings(features);
 		settings.frame.setVisible(true);
 	}

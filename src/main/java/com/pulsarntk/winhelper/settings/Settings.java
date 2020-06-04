@@ -26,12 +26,18 @@ public class Settings extends Setting {
         final GridBagLayout layout = new GridBagLayout();
         final GridBagConstraints c = new GridBagConstraints();
         final JPanel panel = new JPanel(layout);
-        final Icon icon = new ImageIcon("C:\\Users\\Pulsar\\Desktop\\interface.png");
+        final Icon icon = new ImageIcon("interface.png");
 
         final JCheckBox checkBox = new JCheckBox();
         final JLabel label = new JLabel(feature.getName());
         final JButton button = new JButton(icon);
         final boolean enabled = setting.optBoolean("enabled");
+        
+        if (enabled){
+            feature.enable();
+        }else{
+            feature.disable();
+        }
 
 
         panel.setBorder(BorderFactory.createLineBorder(Color.BLACK));

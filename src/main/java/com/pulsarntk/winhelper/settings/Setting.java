@@ -89,8 +89,8 @@ public class Setting extends JSONObject {
             }
         } else {
             try {
-                settingsFile.createNewFile();
-                return isFileValid();
+                if (settingsFile.createNewFile())
+                    return isFileValid();
             } catch (IOException e) {
                 e.printStackTrace();
                 return false;

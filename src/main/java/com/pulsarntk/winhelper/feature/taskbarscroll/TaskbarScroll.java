@@ -19,24 +19,24 @@ public class TaskbarScroll implements Feature {
     String DESCRIPTION = "Change Virtual Desktop using the mouse wheel and move the pointer over the Taskbar.";
     String TASKBAR_CLASS = "Shell_TrayWnd";
     TaskbarScroll.Settings settings = new TaskbarScroll.Settings();
-
-    public TaskbarScroll() {
-        mouseHook.addMouseListener(new GlobalMouseAdapter() {
-            @Override
-            public void mouseWheel(GlobalMouseEvent event) {
-                if (TASKBAR_CLASS.equals(WindowFromPoint.rootWindowClassFromPoint())) {
-                    int wheel = event.getDelta();
-                    if (wheel != 0) {
-                        int currentDesktop = VirtualDesktopAccessor.INSTANCE.GetCurrentDesktopNumber();
-                        if (wheel > 0) {
-                            VirtualDesktopAccessor.INSTANCE.GoToDesktopNumber(currentDesktop - 1);
-                        } else {
-                            VirtualDesktopAccessor.INSTANCE.GoToDesktopNumber(currentDesktop + 1);
-                        }
+    GlobalMouseAdapter mouseListener = new GlobalMouseAdapter() {
+        @Override
+        public void mouseWheel(GlobalMouseEvent event) {
+            if (TASKBAR_CLASS.equals(WindowFromPoint.rootWindowClassFromPoint())) {
+                int wheel = event.getDelta();
+                if (wheel != 0) {
+                    int currentDesktop = VirtualDesktopAccessor.INSTANCE.GetCurrentDesktopNumber();
+                    if (wheel > 0) {
+                        VirtualDesktopAccessor.INSTANCE.GoToDesktopNumber(currentDesktop - 1);
+                    } else {
+                        VirtualDesktopAccessor.INSTANCE.GoToDesktopNumber(currentDesktop + 1);
                     }
                 }
             }
-        });
+        }
+    };
+
+    public TaskbarScroll() {
     }
 
 
@@ -57,10 +57,12 @@ public class TaskbarScroll implements Feature {
 
     @Override
     public void enable() {
+        mouseHook.addMouseListener(mouseListener);
     }
 
     @Override
     public void disable() {
+        mouseHook.removeMouseListener(mouseListener);
     }
 
     @Override

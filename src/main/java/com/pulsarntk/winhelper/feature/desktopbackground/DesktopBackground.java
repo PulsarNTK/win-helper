@@ -173,12 +173,12 @@ public class DesktopBackground implements Feature {
 
     @Override
     public void enable() {
-        VirtualDesktopAccessor.INSTANCE.RegisterPostMessageHook(listener.threadId, 0);
+        listener.register();
     }
 
     @Override
     public void disable() {
-        VirtualDesktopAccessor.INSTANCE.UnregisterPostMessageHook(listener.threadId);
+        listener.unRegister();
     }
 
     @Override

@@ -7,7 +7,11 @@ import com.sun.jna.win32.StdCallLibrary;
 
 public interface User32Extra extends User32 {
 
+    boolean IsIconic(HWND hwnd);
+
     User32Extra INSTANCE = (User32Extra) Native.load("user32", User32Extra.class, W32APIOptions.DEFAULT_OPTIONS);
+
+    boolean ReleaseDC(int hwnd, HDC hdc);
 
     final int GW_HWNDNEXT = 2;
 

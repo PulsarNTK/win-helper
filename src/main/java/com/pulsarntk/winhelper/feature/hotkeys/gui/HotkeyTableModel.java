@@ -1,13 +1,14 @@
-package com.pulsarntk.winhelper.feature.hotkeys;
+package com.pulsarntk.winhelper.feature.hotkeys.gui;
 
 import javax.swing.table.AbstractTableModel;
 
 import com.pulsarntk.winhelper.utils.RegisterHotkey.KEY;
+import com.pulsarntk.winhelper.feature.hotkeys.Hotkey;
 import com.pulsarntk.winhelper.feature.hotkeys.action.itf.Action;
 
 import java.util.Vector;
 
-final class HotkeyTableModel extends AbstractTableModel {
+public class HotkeyTableModel extends AbstractTableModel {
     private String[] ColumNames = {"Action", "Hotkey", "Ctrl", "Shift", "Alt", "Windows", "Active"};
     private final Vector<Hotkey> data;
 
