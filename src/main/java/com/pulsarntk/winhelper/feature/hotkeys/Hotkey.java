@@ -22,6 +22,7 @@ public class Hotkey extends RegisterHotkey {
         this.windows = windows;
         this.active = active;
         setHotkeyListener(action.getListener());
+        action.setKey(key);
     }
 
     public boolean updateHotkey() {
@@ -30,6 +31,7 @@ public class Hotkey extends RegisterHotkey {
             vKCode = key.code;
             fsModifiers = modifiersToInt(ctrl, shift, alt, windows);
             setHotkeyListener(action.getListener());
+            action.setKey(key);
             return register();
         }
         return unRegister();

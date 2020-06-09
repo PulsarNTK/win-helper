@@ -9,7 +9,7 @@ import com.sun.jna.platform.win32.User32;
 import com.sun.jna.platform.win32.WinUser.MSG;
 
 public interface VirtualDesktopAccessor extends Library {
-    VirtualDesktopAccessor INSTANCE = (VirtualDesktopAccessor) Native.load("lib/VirtualDesktopAccessor.dll", VirtualDesktopAccessor.class);
+    VirtualDesktopAccessor INSTANCE = (VirtualDesktopAccessor) Native.load("lib/VirtualDesktopAccessorModified.dll", VirtualDesktopAccessor.class);
 
     int GetCurrentDesktopNumber();
 

@@ -16,4 +16,8 @@ public class WindowFromPoint {
         User32.INSTANCE.GetClassName(User32.INSTANCE.GetAncestor(windowFromPoint(), 2), className, 512);
         return new String(className).replaceAll(String.valueOf((char) 0), "");
     }
+
+    public static HWND rootWindowFromPoint() {
+        return User32.INSTANCE.GetAncestor(windowFromPoint(), 2);
+    }
 }

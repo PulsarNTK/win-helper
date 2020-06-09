@@ -9,8 +9,10 @@ import java.awt.event.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import com.pulsarntk.winhelper.feature.desktopbackground.DesktopBackground.Settings.Background;
 import com.pulsarntk.winhelper.itf.Configurable;
 import com.pulsarntk.winhelper.itf.Feature;
 import com.pulsarntk.winhelper.lib.User32Extra;
@@ -20,6 +22,8 @@ import com.pulsarntk.winhelper.settings.Setting;
 import com.sun.jna.platform.win32.User32;
 import com.sun.jna.platform.win32.WinUser.MSG;
 import org.json.JSONObject;
+import java.awt.image.BufferedImage;
+
 
 public class DesktopBackground implements Feature {
     private Settings settings = new Settings();
@@ -34,6 +38,18 @@ public class DesktopBackground implements Feature {
                 }
             }
         });
+    }
+
+
+    public static BufferedImage getBackground(int index) {
+        if (index < 0) {
+            return getBackground(0);
+        }
+        if (index < Settings.backgrounds.size()) {
+            return Settings.backgrounds.get(index).image;
+        } else {
+            return (getBackground(index % Settings.backgrounds.size() - 1));
+        }
     }
 
     @Override
@@ -52,15 +68,15 @@ public class DesktopBackground implements Feature {
         return "Different background images for each desktop";
     }
 
-    private static class Settings {
+    public static class Settings {
         private JDialog frame = new JDialog((JFrame) null, "Desktop Background Settings");
         private JPanel backgroundPanel = new JPanel(new GridLayout(0, 1));
-        private List<FileSelector> backgrounds = new ArrayList<FileSelector>();
+        public static List<Background> backgrounds = new ArrayList<Background>();
         private Setting setting = new Setting("Desktop Background");
 
         public Settings() {
-            for (int i = 0; i < VirtualDesktopAccessor.INSTANCE.GetDesktopCount(); i++) {
-                FileSelector temp = new FileSelector(i, setting.newSettings(Integer.toString(i)));
+            for (int i = 0; i < setting.toMap().size(); i++) {
+                Background temp = new Background(i, setting.newSettings(Integer.toString(i)));
                 backgrounds.add(temp);
                 backgroundPanel.add(temp.panel);
             }
@@ -70,7 +86,7 @@ public class DesktopBackground implements Feature {
             plus.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    FileSelector temp = new FileSelector(backgrounds.size(), setting.newSettings(Integer.toString(backgrounds.size())));
+                    Background temp = new Background(backgrounds.size(), setting.newSettings(Integer.toString(backgrounds.size())));
                     backgrounds.add(temp);
                     backgroundPanel.add(temp.panel);
                     frame.pack();
@@ -81,6 +97,7 @@ public class DesktopBackground implements Feature {
                 public void actionPerformed(ActionEvent e) {
                     backgroundPanel.remove(backgrounds.size() - 1);
                     backgrounds.remove(backgrounds.size() - 1);
+                    setting.remove(Integer.toString(backgrounds.size()));
                     frame.pack();
                 }
             });
@@ -92,17 +109,20 @@ public class DesktopBackground implements Feature {
             frame.pack();
         }
 
-        private class FileSelector {
+        public class Background {
             public JButton button;
             public JTextField textField;
             public JTextField label;
             public JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 2));
             public int i;
             public Setting setting;
+            public String path = "";
             JFileChooser imageFileChooser = new JFileChooser();
             FileNameExtensionFilter filter = new FileNameExtensionFilter("PNG & JPG Images", "png", "jpg");
+            public File imageFile;
+            public BufferedImage image;
 
-            public FileSelector(int i, Setting setting) {
+            public Background(int i, Setting setting) {
                 this.setting = setting;
                 this.label = new JTextField(setting.optString("label"));
                 this.textField = new JTextField(setting.optString("path"));
@@ -117,6 +137,19 @@ public class DesktopBackground implements Feature {
                 panel.add(this.textField);
                 panel.add(this.button);
 
+
+                path = this.setting.optString("path");
+                imageFile = new File(this.setting.optString("path"));
+                if (imageFile.isFile()) {
+                    try {
+                        image = ImageIO.read(imageFile);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    image = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
+                }
+
                 this.button.addActionListener(new ActionListener() {
 
                     @Override
@@ -124,6 +157,8 @@ public class DesktopBackground implements Feature {
                         if (imageFileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
                             setting.put("path", imageFileChooser.getSelectedFile().getPath());
                             textField.setText(imageFileChooser.getSelectedFile().getPath());
+                            path = imageFileChooser.getSelectedFile().getPath();
+                            imageFile = new File(path);
                         }
                     }
                 });

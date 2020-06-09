@@ -54,6 +54,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import com.pulsarntk.winhelper.feature.desktopbackground.DesktopBackground;
 import com.pulsarntk.winhelper.feature.desktopoverview.Window;
 import java.awt.image.BufferStrategy;
 import com.sun.jna.platform.win32.WinUser.MSG;
@@ -64,9 +65,11 @@ public class DesktopOverview implements Feature, ASyncRenderable {
         public void setVisible(boolean visible) {
             if (visible) {
                 getWindowsZOrder();
-                Animation.normalizeAnimationPosition(false);
+                Animation.calculateAnimation();
                 aSyncRenderer.startASyncRender();
                 setDesktopsRender(true);
+                startTime = System.currentTimeMillis();
+                frames = 0;
             } else {
                 aSyncRenderer.stopASyncRender();
                 setDesktopsRender(false);
@@ -75,6 +78,7 @@ public class DesktopOverview implements Feature, ASyncRenderable {
         }
     };
 
+    public static long startTime = 0;
     private static RegisterHotkey hotkey;
     private static Canvas canvas = new Canvas();
     private static Dimension SCREEN_SIZE = Toolkit.getDefaultToolkit().getScreenSize();
@@ -82,22 +86,32 @@ public class DesktopOverview implements Feature, ASyncRenderable {
     private static int currentDesktop = 0;
     private static int desktopCount = 0;
     private static int frames;
-    public ASyncRenderer aSyncRenderer = new ASyncRenderer(this, 120);
+    public ASyncRenderer aSyncRenderer = new ASyncRenderer(this, 60);
     static BufferStrategy buffer;
     static Graphics2D graphics;
     private static Thread animationThread;
-    public static BufferedImage bg;
-    public static BufferedImage bg1;
-    public static BufferedImage bg2;
+    public static Position BACKGROUND_SIZE = new Position(0, (int) (SCREEN_SIZE.height * Options.currentDesktopZoomOut - (Options.sideDesktopMargin * (SCREEN_SIZE.width / SCREEN_SIZE.height))) / 2,
+            SCREEN_SIZE.width - (int) ((SCREEN_SIZE.width * Options.currentDesktopZoomOut)) + (Options.sideDesktopMargin),
+            SCREEN_SIZE.height - (int) ((SCREEN_SIZE.height * Options.currentDesktopZoomOut)) + (Options.sideDesktopMargin * (SCREEN_SIZE.width / SCREEN_SIZE.height)));
+    public static Position[] dPositions = {new Position(), new Position(), new Position()};
+    public static Position[] bPositions = {new Position(0, BACKGROUND_SIZE.y, BACKGROUND_SIZE.width, BACKGROUND_SIZE.height), new Position(0, BACKGROUND_SIZE.y, BACKGROUND_SIZE.width, BACKGROUND_SIZE.height),
+            new Position(0, BACKGROUND_SIZE.y, BACKGROUND_SIZE.width, BACKGROUND_SIZE.height)};
 
-    private WinEventProc winEventProc = new WinEventProc() {
-        @Override
-        public void callback(HANDLE hWinEventHook, DWORD event, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime) {
-            if (VirtualDesktopAccessor.INSTANCE.GetWindowDesktopNumber(hwnd) != -1) {
-                // getWindowsZOrder();
-            }
-        }
-    };
+    // private WinEventProc winEventProc = new WinEventProc() {
+    // @Override
+    // public void callback(HANDLE hWinEventHook, DWORD event, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread,
+    // DWORD dwmsEventTime) {
+    // if (aSyncRenderer.getStatus() && VirtualDesktopAccessor.INSTANCE.GetWindowDesktopNumber(hwnd) != -1) {
+    // int desktopNumber = VirtualDesktopAccessor.INSTANCE.GetWindowDesktopNumber(hwnd);
+    // byte[] title = new byte[512];
+    // User32Extra.INSTANCE.GetWindowTextA(hwnd, title, 512);
+    // System.out.println("Title: " + title + " DesktopNumber: " + desktopNumber);
+    // setDesktopsRender(false);
+    // getWindowsZOrder();
+    // setDesktopsRender(true);
+    // }
+    // }
+    // };
     private User32Extra.WndEnumProc getWindowsZOrderProc = new User32Extra.WndEnumProc() {
         public boolean callback(int hwnd, int lParam) {
             if (User32Extra.INSTANCE.IsWindowVisible(hwnd)) {
@@ -108,7 +122,7 @@ public class DesktopOverview implements Feature, ASyncRenderable {
                     byte[] buffer = new byte[1024];
                     User32Extra.INSTANCE.GetWindowTextA(hwnd, buffer, buffer.length);
                     String title = Native.toString(buffer);
-                    if (title.equals("Desktop Overview") || title.equals("Options")) {
+                    if (title.equals("Desktop Overview") || title.equals("Settings")) {
                         return true;
                     }
                     boolean isMaximized = User32Extra.INSTANCE.IsZoomed(hwnd);
@@ -137,14 +151,7 @@ public class DesktopOverview implements Feature, ASyncRenderable {
         graphics = (Graphics2D) buffer.getDrawGraphics();
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-        try {
-            bg = ImageIO.read(new File("C:\\Users\\Pulsar\\Pictures\\wallpapers\\w1.jpg"));
-            bg1 = ImageIO.read(new File("C:\\Users\\Pulsar\\Pictures\\wallpapers\\w2.jpg"));
-            bg2 = ImageIO.read(new File("C:\\Users\\Pulsar\\Pictures\\wallpapers\\w3.jpg"));
-        } catch (IOException e1) {
-            e1.printStackTrace();
-        }
-
+        mouseVelocityListener();
         hotkey = new RegisterHotkey(KEY.VK_TAB.code, 0x02);
         hotkey.setHotkeyListener(new HotkeyListener() {
             public void onKeyPress(MSG msg) {
@@ -173,7 +180,7 @@ public class DesktopOverview implements Feature, ASyncRenderable {
 
         canvas.addMouseWheelListener(new MouseWheelListener() {
             public void mouseWheelMoved(MouseWheelEvent e) {
-                startAnimation(e.getWheelRotation());
+                scrollAnimation(e.getWheelRotation());
             }
         });
 
@@ -193,23 +200,32 @@ public class DesktopOverview implements Feature, ASyncRenderable {
 
             @Override
             public void mousePressed(MouseEvent e) {
-                System.out.println("mousePressed");
+                Animation.mousePressed = true;
                 Animation.mousePos[0] = e.getX() - Animation.width;
                 Animation.mousePos[1] = e.getY() - Animation.height;
+                Animation.velocity = 0;
             }
 
             @Override
             public void mouseReleased(MouseEvent e) {
+                Animation.mousePressed = false;
             }
         });
 
         canvas.addMouseMotionListener(new MouseMotionListener() {
-
             @Override
             public void mouseDragged(MouseEvent e) {
-                Animation.normalizeAnimationPosition(true);
-                Animation.width = e.getX() - Animation.mousePos[0];
-                Animation.height = e.getY() - Animation.mousePos[1];
+                if ((currentDesktop != 0 || Animation.width < Options.sideDesktopMargin || Animation.width > e.getX() - Animation.mousePos[0])
+                        && (currentDesktop != desktopCount - 1 || Animation.width > -Options.sideDesktopMargin || Animation.width < e.getX() - Animation.mousePos[0])) {
+                    Animation.width = e.getX() - Animation.mousePos[0];
+                    Animation.height = e.getY() - Animation.mousePos[1];
+                    if (Animation.lastPrevPos < System.currentTimeMillis() + 20) {
+                        Animation.velocity = (Animation.prevPos - e.getX()) * 10;
+                        Animation.prevPos = e.getX();
+                        Animation.lastPrevPos = System.currentTimeMillis();
+                    }
+                    Animation.mouseDrag();
+                }
             }
 
             @Override
@@ -221,7 +237,7 @@ public class DesktopOverview implements Feature, ASyncRenderable {
         // @Override
         // public void run() {
         // Ole32.INSTANCE.CoInitialize(null);
-        // User32Extra.INSTANCE.SetWinEventHook(0x8002, 0x8002, (HMODULE) null, winEventProc, 0, 0, 0x0); //
+        // User32Extra.INSTANCE.SetWinEventHook(0x8002, 0x8002, (HMODULE) null, winEventProc, 0, 0, 0x1); //
         // WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNTHREAD = 0x00 | 0x01
         // MSG msg = new MSG();
         // User32.INSTANCE.GetMessage(msg, null, 0, 0);
@@ -238,71 +254,20 @@ public class DesktopOverview implements Feature, ASyncRenderable {
 
     @Override
     public void render() {
-        if (frames % 120 == 0) {
-            System.out.println("animationNormalizedPosition : " + Animation.animationNormalizedPosition);
-            System.out.println("c : " + Animation.currentDesktopZoomOut);
-            System.out.println("l : " + Animation.leftDesktopZoomOut);
-            System.out.println("e : " + Animation.rightDesktopZoomOut);
-            System.out.println("mousePos[0] : " + Animation.mousePos[0]);
-        }
-
-        Position cPosition = new Position(//
-                (int) ((SCREEN_SIZE.width * Animation.currentDesktopZoomOut) / 2), //
-                (int) ((SCREEN_SIZE.height * Animation.currentDesktopZoomOut) / 2), //
-                SCREEN_SIZE.width - (int) ((SCREEN_SIZE.width * Animation.currentDesktopZoomOut)), //
-                SCREEN_SIZE.height - (int) ((SCREEN_SIZE.height * Animation.currentDesktopZoomOut))); //
-
-        Position lPosition = new Position(//
-                cPosition.x - ((SCREEN_SIZE.width - (int) ((SCREEN_SIZE.width * Animation.leftDesktopZoomOut))) + Options.sideDesktopMargin), //
-                (int) ((SCREEN_SIZE.height * Animation.leftDesktopZoomOut) / 2), //
-                SCREEN_SIZE.width - (int) ((SCREEN_SIZE.width * Animation.leftDesktopZoomOut)), //
-                SCREEN_SIZE.height - (int) ((SCREEN_SIZE.height * Animation.leftDesktopZoomOut)));
-
-
-        Position rPosition = new Position(//
-                cPosition.x + cPosition.width + Options.sideDesktopMargin, //
-                (int) ((SCREEN_SIZE.height * Animation.rightDesktopZoomOut) / 2), //
-                SCREEN_SIZE.width - (int) (((SCREEN_SIZE.width) * Animation.rightDesktopZoomOut)), //
-                SCREEN_SIZE.height - (int) ((SCREEN_SIZE.height * Animation.rightDesktopZoomOut)));
-
-
+        if (Animation.desktopChanging)
+            return;
         graphics.fillRect(0, 0, overviewFrame.getWidth(), overviewFrame.getHeight());
-
-        int bgWidth = SCREEN_SIZE.width - (int) ((SCREEN_SIZE.width * Options.currentDesktopZoomOut)) + (Options.sideDesktopMargin);
-        int bgHeight = SCREEN_SIZE.height - (int) ((SCREEN_SIZE.height * Options.currentDesktopZoomOut)) + (Options.sideDesktopMargin * (SCREEN_SIZE.width / SCREEN_SIZE.height));
-
-        graphics.drawImage(bg, lPosition.x + Animation.width + (int) (Options.sideDesktopMargin * 0.5), (int) (SCREEN_SIZE.height * Options.currentDesktopZoomOut - (Options.sideDesktopMargin * (SCREEN_SIZE.width / SCREEN_SIZE.height))) / 2,
-                bgWidth, bgHeight, null);
-
-        graphics.drawImage(bg1, cPosition.x + Animation.width - (int) (Options.sideDesktopMargin * 0.5),
-                (int) (SCREEN_SIZE.height * Options.currentDesktopZoomOut - (Options.sideDesktopMargin * (SCREEN_SIZE.width / SCREEN_SIZE.height))) / 2, bgWidth, bgHeight, null);
-
-        graphics.drawImage(bg2, (rPosition.x + Animation.width - (int) (Options.sideDesktopMargin * 0.5)),
-                (int) (SCREEN_SIZE.height * Options.currentDesktopZoomOut - (Options.sideDesktopMargin * (SCREEN_SIZE.width / SCREEN_SIZE.height))) / 2, bgWidth, bgHeight, null);
-
-        graphics.drawImage(desktops.get(currentDesktop).getImage(), //
-                cPosition.x + Animation.width, //
-                cPosition.y, //
-                cPosition.width, //
-                cPosition.height, null);
-
-        if (currentDesktop != desktopCount - 1)
-            graphics.drawImage(desktops.get(currentDesktop + 1).getImage(), //
-                    rPosition.x + Animation.width, //
-                    rPosition.y, //
-                    rPosition.width, //
-                    rPosition.height, null);
-
+        graphics.drawImage(DesktopBackground.getBackground(currentDesktop - 1), bPositions[0].x, bPositions[0].y, bPositions[0].width, bPositions[0].height, null);
+        graphics.drawImage(DesktopBackground.getBackground(currentDesktop), bPositions[1].x, bPositions[1].y, bPositions[1].width, bPositions[1].height, null);
+        graphics.drawImage(DesktopBackground.getBackground(currentDesktop + 1), bPositions[2].x, bPositions[2].y, bPositions[2].width, bPositions[2].height, null);
+        graphics.drawImage(desktops.get(currentDesktop).getImage(), dPositions[1].x, dPositions[1].y, dPositions[1].width, dPositions[1].height, null);
         if (currentDesktop != 0)
-            graphics.drawImage(desktops.get(currentDesktop - 1).getImage(), //
-                    lPosition.x + Animation.width, //
-                    lPosition.y, //
-                    lPosition.width, //
-                    lPosition.height, null);
-
+            graphics.drawImage(desktops.get(currentDesktop - 1).getImage(), dPositions[0].x, dPositions[0].y, dPositions[0].width, dPositions[0].height, null);
+        if (currentDesktop != desktopCount - 1)
+            graphics.drawImage(desktops.get(currentDesktop + 1).getImage(), dPositions[2].x, dPositions[2].y, dPositions[2].width, dPositions[2].height, null);
         buffer.show();
         frames++;
-        // System.out.println(frames++);
+        // System.out.println((double) frames / ((System.currentTimeMillis() - startTime) / 1000));
     }
 
     public static boolean changeDesktop(int direction) {
@@ -359,7 +324,31 @@ public class DesktopOverview implements Feature, ASyncRenderable {
         }
     }
 
-    public void startAnimation(int direction) {
+    public void mouseVelocityListener() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        Thread.sleep(10);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    if (Animation.velocity != 0) {
+                        Animation.velocity = (int) (Animation.velocity / 1.030);
+                        if (!Animation.mousePressed) {
+                            if ((currentDesktop != 0 || Animation.width < Options.sideDesktopMargin) && (currentDesktop != desktopCount - 1 || Animation.width > -Options.sideDesktopMargin)) {
+                                Animation.width -= (Animation.velocity * 0.2);
+                                Animation.mouseVelocity();
+                            }
+                        }
+                    }
+                }
+            }
+        }).start();
+    }
+
+    public void scrollAnimation(int direction) {
         if (!changeDesktop(direction))
             return;
         if (animationThread != null && animationThread.isAlive()) {
@@ -381,7 +370,7 @@ public class DesktopOverview implements Feature, ASyncRenderable {
                             if (animationThread.isInterrupted())
                                 return;
                         }
-                        Animation.normalizeAnimationPosition(false);
+                        Animation.calculateAnimation();
                     }
                     Animation.width = 0;
                 } else if (direction == -1) {
@@ -396,7 +385,7 @@ public class DesktopOverview implements Feature, ASyncRenderable {
                             if (animationThread.isInterrupted())
                                 return;
                         }
-                        Animation.normalizeAnimationPosition(false);
+                        Animation.calculateAnimation();
                     }
                     Animation.width = 0;
                 }
@@ -447,11 +436,14 @@ public class DesktopOverview implements Feature, ASyncRenderable {
         private static double sideDesktopZoomOut = 0.5;
     }
 
-    private class Position {
+    public static class Position {
         public int x = 0;
         public int y = 0;
         public int width = 0;
         public int height = 0;
+
+        public Position() {
+        }
 
         public Position(int x, int y, int width, int height) {
             this.x = x;
@@ -469,8 +461,13 @@ public class DesktopOverview implements Feature, ASyncRenderable {
         public static double rightDesktopZoomOut = 0;
         public static double leftDesktopZoomOut = 0;
         public static int[] mousePos = new int[2];
+        public static int velocity = 0;
+        public static int prevPos = 0;
+        public static long lastPrevPos = 0;
+        public static boolean mousePressed = false;
+        public static boolean desktopChanging = false;
 
-        public static void normalizeAnimationPosition(boolean mouse) {
+        public static void calculateAnimation() {
             if (width != 0) {
                 animationNormalizedPosition = 1 - ((double) (DesktopOverview.SCREEN_SIZE.width - ((SCREEN_SIZE.width * Options.currentDesktopZoomOut) + (Options.sideDesktopMargin * 2)) - (width))
                         / (double) (DesktopOverview.SCREEN_SIZE.width - ((SCREEN_SIZE.width * Options.currentDesktopZoomOut) + (Options.sideDesktopMargin * 2))));
@@ -480,15 +477,6 @@ public class DesktopOverview implements Feature, ASyncRenderable {
                     animationDirection = -1;
             } else
                 animationNormalizedPosition = 0;
-            if (mouse) {
-                if (animationNormalizedPosition > 0.6) {
-                    mousePos[0] += SCREEN_SIZE.width - (int) ((SCREEN_SIZE.width * Animation.leftDesktopZoomOut)) + (Options.sideDesktopMargin * 0.6);
-                    DesktopOverview.changeDesktop(-1);
-                } else if (animationNormalizedPosition < -0.6) {
-                    mousePos[0] -= SCREEN_SIZE.width - (int) (((SCREEN_SIZE.width) * Animation.rightDesktopZoomOut)) + (Options.sideDesktopMargin * 0.6);
-                    DesktopOverview.changeDesktop(1);
-                }
-            }
             currentDesktopZoomOut = (Options.currentDesktopZoomOut + (animationNormalizedPosition * (Options.sideDesktopZoomOut - Options.currentDesktopZoomOut) * animationDirection));
             if (animationDirection == 1) {
                 leftDesktopZoomOut = (Options.sideDesktopZoomOut + (animationNormalizedPosition * (Options.currentDesktopZoomOut - Options.sideDesktopZoomOut)));
@@ -496,6 +484,64 @@ public class DesktopOverview implements Feature, ASyncRenderable {
             } else {
                 leftDesktopZoomOut = (Options.sideDesktopZoomOut + (-animationNormalizedPosition * (Options.currentDesktopZoomOut - Options.sideDesktopZoomOut)));
                 rightDesktopZoomOut = (Options.sideDesktopZoomOut + ((-animationNormalizedPosition) * (Options.currentDesktopZoomOut - Options.sideDesktopZoomOut)));
+            }
+
+            DesktopOverview.dPositions[1].x = (int) ((SCREEN_SIZE.width * Animation.currentDesktopZoomOut) / 2);
+            DesktopOverview.dPositions[1].y = (int) ((SCREEN_SIZE.height * Animation.currentDesktopZoomOut) / 2);
+            DesktopOverview.dPositions[1].width = SCREEN_SIZE.width - (int) ((SCREEN_SIZE.width * Animation.currentDesktopZoomOut));
+            DesktopOverview.dPositions[1].height = SCREEN_SIZE.height - (int) ((SCREEN_SIZE.height * Animation.currentDesktopZoomOut));
+
+            DesktopOverview.dPositions[0].x = dPositions[1].x - ((SCREEN_SIZE.width - (int) ((SCREEN_SIZE.width * Animation.leftDesktopZoomOut))) + Options.sideDesktopMargin);
+            DesktopOverview.dPositions[0].y = (int) ((SCREEN_SIZE.height * Animation.leftDesktopZoomOut) / 2);
+            DesktopOverview.dPositions[0].width = SCREEN_SIZE.width - (int) ((SCREEN_SIZE.width * Animation.leftDesktopZoomOut));
+            DesktopOverview.dPositions[0].height = SCREEN_SIZE.height - (int) ((SCREEN_SIZE.height * Animation.leftDesktopZoomOut));
+
+            DesktopOverview.dPositions[2].x = dPositions[1].x + dPositions[1].width + Options.sideDesktopMargin;
+            DesktopOverview.dPositions[2].y = (int) ((SCREEN_SIZE.height * Animation.rightDesktopZoomOut) / 2);
+            DesktopOverview.dPositions[2].width = SCREEN_SIZE.width - (int) (((SCREEN_SIZE.width) * Animation.rightDesktopZoomOut));
+            DesktopOverview.dPositions[2].height = SCREEN_SIZE.height - (int) ((SCREEN_SIZE.height * Animation.rightDesktopZoomOut));
+
+            dPositions[0].x += width;
+            dPositions[1].x += width;
+            dPositions[2].x += width;
+
+            DesktopOverview.bPositions[0].x = dPositions[0].x - (int) (Options.sideDesktopMargin * 0.5);
+            DesktopOverview.bPositions[1].x = dPositions[1].x - (int) (Options.sideDesktopMargin * 0.5);
+            DesktopOverview.bPositions[2].x = (dPositions[2].x - (int) (Options.sideDesktopMargin * 0.5));
+
+        }
+
+        public static void mouseDrag() {
+            calculateAnimation();
+            if (animationNormalizedPosition > 0.50) {
+                desktopChanging = true;
+                DesktopOverview.changeDesktop(-1);
+                mousePos[0] += (SCREEN_SIZE.width - (int) ((SCREEN_SIZE.width * (leftDesktopZoomOut))) + (Options.sideDesktopMargin)) - 10;
+                width = canvas.getMousePosition().x - mousePos[0];
+                calculateAnimation();
+                desktopChanging = false;
+            } else if (animationNormalizedPosition < -0.50) {
+                desktopChanging = true;
+                DesktopOverview.changeDesktop(1);
+                mousePos[0] -= (SCREEN_SIZE.width - (int) (((SCREEN_SIZE.width) * (rightDesktopZoomOut))) + (Options.sideDesktopMargin)) - 10;
+                width = canvas.getMousePosition().x - mousePos[0];
+                calculateAnimation();
+                desktopChanging = false;
+            }
+        }
+
+        public static void mouseVelocity() {
+            calculateAnimation();
+            if (animationNormalizedPosition > 1) {
+                desktopChanging = true;
+                DesktopOverview.changeDesktop(-1);
+                calculateAnimation();
+                desktopChanging = false;
+            } else if (animationNormalizedPosition < -1) {
+                desktopChanging = true;
+                DesktopOverview.changeDesktop(1);
+                calculateAnimation();
+                desktopChanging = false;
             }
         }
     }

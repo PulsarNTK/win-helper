@@ -133,7 +133,7 @@ public class HotkeyAddDialog extends JDialog {
 
     private void updateActions() {
         actionComboBox.removeAllItems();
-        for (Action action : Actions.getActions().values()) {
+        for (Action action : Actions.getActionsSorted().values()) {
             actionComboBox.addItem(action);
         }
     }

@@ -33,6 +33,10 @@ public interface ASyncRenderable extends Renderable {
             this.status = false;
         }
 
+        public boolean getStatus() {
+            return status;
+        }
+
         public void setFrameRate(long frameRate) {
             this.sleepBetweenFrames = 1000 / frameRate;
         }

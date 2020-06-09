@@ -55,7 +55,7 @@ public class Hotkeys implements Feature {
             table.getSelectionModel().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
             table.setFillsViewportHeight(true);
             hotkeysPanel.setPreferredSize(new Dimension(0, 360 - 72));
-            table.getColumnModel().getColumn(0).setCellEditor(new DefaultCellEditor(new JComboBox<>(Actions.getActions().values().toArray())));
+            table.getColumnModel().getColumn(0).setCellEditor(new DefaultCellEditor(new JComboBox<>(Actions.getActionsSorted().values().toArray())));
             table.getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(new JComboBox<>(KEY.getDefinedKeys())));
             table.getColumnModel().getColumn(0).setPreferredWidth(192);
             table.getColumnModel().getColumn(1).setPreferredWidth(128);

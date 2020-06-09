@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import com.pulsarntk.winhelper.feature.hotkeys.action.actions.customactions.ScrollDesktop;
 import com.pulsarntk.winhelper.feature.hotkeys.action.itf.Action;
 import com.pulsarntk.winhelper.feature.hotkeys.action.itf.ActionInfo;
@@ -13,7 +14,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class CustomActionHandler extends Setting {
-    public static Map<String, CustomAction> customActions = new HashMap<String, CustomAction>();
+    public static TreeMap<String, CustomAction> customActions = new TreeMap<String, CustomAction>();
     public static Map<String, Class<?>> customActionsClass = new HashMap<String, Class<?>>();
     static {
         registerCustomActionClass(ScrollDesktop.class);
@@ -33,10 +34,7 @@ public class CustomActionHandler extends Setting {
     private static void registerCustomActionClass(Class<?> clazz) {
         String name;
         ActionInfo aInfo = clazz.getAnnotation(ActionInfo.class);
-        if (aInfo == null)
-            name = clazz.getName();
-        else
-            name = aInfo.getName();
+        name = (aInfo == null) ? clazz.getName() : aInfo.getName();
         customActionsClass.put(name, clazz);
     }
 

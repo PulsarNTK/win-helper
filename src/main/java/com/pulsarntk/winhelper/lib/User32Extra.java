@@ -29,6 +29,8 @@ public interface User32Extra extends User32 {
 
     void GetWindowTextA(int hwnd, byte[] buffer, int buflen);
 
+    void GetWindowTextA(HWND hwnd, byte[] buffer, int buflen);
+
     int GetTopWindow(int hwnd);
 
     int GetWindow(int hwnd, int flag);
@@ -54,4 +56,17 @@ public interface User32Extra extends User32 {
     public static interface WndEnumProc extends StdCallLibrary.StdCallCallback {
         boolean callback(int hwnd, int lParam);
     }
+
+    HWND SetActiveWindow(int rootWindowFromPoint);
+
+    HWND SetActiveWindow(HWND rootWindowFromPoint);
+
+    HWND BringWindowToTop(int rootWindowFromPoint);
+
+    HWND BringWindowToTop(HWND rootWindowFromPoint);
+
+    boolean AttachThreadInput(int idAttach, int idAttachTo, boolean fAttach);
+
+    short GetKeyState(int vKCode);
+
 }

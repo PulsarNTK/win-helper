@@ -31,7 +31,7 @@ public class GoNextDesktop implements Action {
 
     @Override
     public String toString() {
-        return "Go Next Desktop";
+        return getName();
     }
 
 }

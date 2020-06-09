@@ -6,8 +6,12 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import com.pulsarntk.winhelper.itf.Feature;
+import com.pulsarntk.winhelper.lib.Kernel32Extra;
+import com.pulsarntk.winhelper.lib.User32Extra;
 import com.pulsarntk.winhelper.lib.VirtualDesktopAccessor;
 import com.pulsarntk.winhelper.utils.WindowFromPoint;
+import com.sun.jna.platform.win32.WinDef.HWND;
+import org.lwjgl.system.windows.User32;
 import com.pulsarntk.winhelper.itf.Configurable;
 import lc.kra.system.mouse.GlobalMouseHook;
 import lc.kra.system.mouse.event.GlobalMouseAdapter;
@@ -26,6 +30,15 @@ public class TaskbarScroll implements Feature {
                 int wheel = event.getDelta();
                 if (wheel != 0) {
                     int currentDesktop = VirtualDesktopAccessor.INSTANCE.GetCurrentDesktopNumber();
+                    HWND target = User32Extra.INSTANCE.FindWindow("Shell_TrayWnd", "");
+                    int mainThreadId = Kernel32Extra.INSTANCE.GetCurrentThreadId();
+                    int foreThreadId = User32Extra.INSTANCE.GetWindowThreadProcessId(User32Extra.INSTANCE.GetForegroundWindow(), null);
+                    int targetThreadId = User32Extra.INSTANCE.GetWindowThreadProcessId(target, null);
+                    User32Extra.INSTANCE.AttachThreadInput(mainThreadId, foreThreadId, true);
+                    User32Extra.INSTANCE.AttachThreadInput(foreThreadId, targetThreadId, true);
+                    User32Extra.INSTANCE.SetForegroundWindow(target);
+                    User32Extra.INSTANCE.AttachThreadInput(mainThreadId, foreThreadId, false);
+                    User32Extra.INSTANCE.AttachThreadInput(foreThreadId, targetThreadId, false);
                     if (wheel > 0) {
                         VirtualDesktopAccessor.INSTANCE.GoToDesktopNumber(currentDesktop - 1);
                     } else {

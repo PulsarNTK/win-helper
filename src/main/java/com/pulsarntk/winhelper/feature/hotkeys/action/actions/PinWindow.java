@@ -1,32 +1,28 @@
 package com.pulsarntk.winhelper.feature.hotkeys.action.actions;
 
-import javax.swing.JDialog;
 import com.pulsarntk.winhelper.feature.hotkeys.action.itf.Action;
-import com.pulsarntk.winhelper.feature.hotkeys.action.itf.CustomAction;
+import com.pulsarntk.winhelper.lib.User32Extra;
 import com.pulsarntk.winhelper.lib.VirtualDesktopAccessor;
-import com.pulsarntk.winhelper.settings.Setting;
 import com.pulsarntk.winhelper.utils.RegisterHotkey.HotkeyListener;
 import com.sun.jna.platform.win32.WinUser.MSG;
 
-public class GoPreviousDesktop implements Action {
+public class PinWindow implements Action {
+
     static HotkeyListener listener = new HotkeyListener() {
         @Override
         public void onKeyPress(MSG msg) {
-            VirtualDesktopAccessor.INSTANCE.GoToDesktopNumber(VirtualDesktopAccessor.INSTANCE.GetCurrentDesktopNumber() - 1);
+            VirtualDesktopAccessor.INSTANCE.PinWindow(User32Extra.INSTANCE.GetForegroundWindow());
         }
     };
 
-    public GoPreviousDesktop() {
+    @Override
+    public String getName() {
+        return "Pin Window";
     }
 
     @Override
     public HotkeyListener getListener() {
         return listener;
-    }
-
-    @Override
-    public String getName() {
-        return "Go Previous Desktop";
     }
 
     @Override

@@ -52,6 +52,13 @@ public class Setting extends JSONObject {
         return this;
     }
 
+    @Override
+    public JSONObject remove(String key) {
+        super.remove(key);
+        writeToFile();
+        return this;
+    }
+
     public static void writeToFile() {
         if (isFileValid()) {
             try {

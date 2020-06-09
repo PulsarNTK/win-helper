@@ -53,8 +53,11 @@ public class Desktop extends ASyncImageRenderer {
         graphics = bufferedImage.getGraphics();
         graphics.setColor(new Color(0, 0, 0, 255));
         graphics.drawRect(-1, -1, size.width + 1, size.height + 1);
-        for (Window window : windows) {
-            graphics.drawImage(window.getImage(), window.rect.left, window.rect.top, null);
+        try {
+            for (Window window : windows) {
+                graphics.drawImage(window.getImage(), window.rect.left, window.rect.top, null);
+            }
+        } catch (ConcurrentModificationException e) {
         }
         graphics.dispose();
     }

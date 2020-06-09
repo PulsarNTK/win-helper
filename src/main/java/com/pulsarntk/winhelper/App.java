@@ -30,7 +30,6 @@ public class App {
 		addFeature(new Hotkeys());
 		addFeature(new DesktopOverview());
 		Settings settings = new Settings(features);
-		settings.frame.setVisible(true);
 	}
 
 	public static void addFeature(Feature feature) {
